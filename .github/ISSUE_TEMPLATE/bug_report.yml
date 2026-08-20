@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a reproducible problem in Audio A/B Comparator
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you. Do not attach confidential audio; use a minimal public sample only if necessary.
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      placeholder: 0.2.1-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: windows
+    attributes:
+      label: Operating system
+      options:
+        - Windows 10 x64
+        - Windows 11 x64
+        - Linux source build
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the audio format, exact actions and result.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional details
+      description: Device, sample rate, screenshots or logs with local paths and personal data removed.
