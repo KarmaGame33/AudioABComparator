@@ -9,7 +9,12 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 - a dedicated A/B application icon matching the interface colour palette, embedded in Linux and Windows builds;
 - Linux desktop metadata and a scalable application icon for desktop integration;
 - a Linux x86_64 AppImage built on Ubuntu 22.04 LTS with Qt 6.9.3, FFmpeg, XCB and Wayland support;
-- reproducible AppImage packaging scripts with AppStream metadata and automated WAV, FLAC and MP3 validation.
+- reproducible AppImage packaging scripts with AppStream metadata and automated WAV, FLAC and MP3 validation;
+- public screenshots of the light theme and Blind Test screen.
+
+### Documentation
+
+- expanded the public GitHub presentation with the complete feature list, instant keyboard voting, planned features and an explicit invitation for feedback.
 
 ### Fixed
 

@@ -18,7 +18,9 @@ Cette préversion donne à Audio A/B Comparator une identité visuelle cohérent
 - identifiant de bureau unique évitant le remplacement par l’icône audio générique de KDE ;
 - AppImage Linux x86_64 construite de manière reproductible sous Ubuntu 22.04 LTS avec Qt 6.9.3 ;
 - métadonnées AppStream, licences et notices intégrées à l’AppImage ;
-- capture et GIF publics reconstruits depuis le binaire Windows final.
+- capture et GIF publics reconstruits depuis le binaire Windows final ;
+- captures publiques supplémentaires du thème clair et du Blind Test ;
+- présentation GitHub enrichie avec les fonctions actuelles, la feuille de route et l’appel aux retours.
 
 ## Validation
 
