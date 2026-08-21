@@ -1,8 +1,8 @@
 # Installation de l'environnement et compilation
 
 **Projet :** A/B Compare  
-**Date de référence :** 20 août 2026  
-**État :** builds validés sous Windows 10 et Windows 11 x64 ; ZIP de publication validé sous Windows 10 ; validation AppImage à venir
+**Date de référence :** 21 août 2026  
+**État :** builds validés sous Windows 10 et Windows 11 x64 ; ZIP de publication validé sous Windows 10 ; AppImage Linux x86_64 construite sous Ubuntu 22.04 LTS et validée sous KDE/Wayland
 
 ## 1. Portée de ce document
 
@@ -26,7 +26,8 @@ Les commandes Windows ci-dessous utilisent Qt 6.9.3 et Visual Studio 2022. Elles
 
 | Système | Build prévu | Tests natifs | Publication |
 |---|---:|---:|---:|
-| Arch Linux x64, KDE Plasma, Wayland, PipeWire | validé depuis les sources | automatisés | AppImage à produire |
+| Arch Linux x64, KDE Plasma, Wayland, PipeWire | validé depuis les sources et via AppImage | automatisés et smoke tests Wayland/XWayland | AppImage bêta |
+| Ubuntu 22.04 LTS x64 | build AppImage reproductible en conteneur | automatisés avec sortie PulseAudio virtuelle | AppImage bêta ; essai GNOME interactif à compléter |
 | Windows 10 x64 | validé | validé | ZIP portable bêta |
 | Windows 11 x64 | validé | validé | ZIP portable bêta |
 | macOS Intel/Apple Silicon | préparé | non disponible actuellement | différée |
@@ -102,7 +103,7 @@ Lancer cette version :
 ./dist/linux/bin/ab-compare
 ```
 
-Cette arborescence utilise encore les bibliothèques Qt et audio du système. La production d'un AppImage ou d'un Flatpak réellement distribuable sera ajoutée après le choix du format de packaging Linux.
+Cette arborescence utilise encore les bibliothèques Qt et audio du système. Utiliser la section suivante pour produire le paquet AppImage distribuable.
 
 ### 3.6 Refaire une compilation après modification
 
@@ -112,6 +113,32 @@ ctest --test-dir build/linux-release --output-on-failure
 ```
 
 Il n'est pas nécessaire de relancer la commande de configuration sauf si les fichiers CMake, les dépendances ou les options changent.
+
+### 3.7 Produire l’AppImage Linux x86_64
+
+Docker doit être installé et accessible à l’utilisateur courant. Depuis la racine du dépôt :
+
+```fish
+./scripts/linux/build-appimage-container.sh
+```
+
+Le script construit l’application dans une image Ubuntu 22.04 LTS figée, installe Qt 6.9.3, exécute CTest avec des pistes WAV, FLAC et MP3 et assemble les plugins Qt Multimedia, XCB et Wayland. Les outils `linuxdeploy` et `linuxdeploy-plugin-qt` téléchargés sont contrôlés par SHA-256.
+
+Les fichiers produits sont :
+
+```text
+dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+dist/release/SHA256SUMS-linux
+```
+
+Validation locale :
+
+```fish
+chmod +x dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage --smoke-test
+```
+
+Le compte rendu détaillé se trouve dans [`validation_linux.md`](validation_linux.md).
 
 ## 4. Windows 10 et Windows 11 x64 — PowerShell
 
