@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Audio A/B Comparator
+Comment=Compare two audio tracks instantly
+Comment[fr]=Comparer instantanément deux pistes audio
+Exec=ab-compare
+Icon=io.github.KarmaGame33.AudioABComparator
+Terminal=false
+Categories=AudioVideo;
+Keywords=audio;comparison;A/B;blind test;mixing;mastering;
+Keywords[fr]=audio;comparaison;A/B;test aveugle;mixage;mastering;

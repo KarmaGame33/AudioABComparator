@@ -1,6 +1,7 @@
 #include "audio/AudioEngine.h"
 
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
     QGuiApplication::setApplicationName(QStringLiteral("Audio A/B Comparator"));
     QGuiApplication::setApplicationVersion(QStringLiteral(AB_COMPARE_VERSION));
     QGuiApplication::setOrganizationName(QStringLiteral("KarmaApps"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("io.github.KarmaGame33.AudioABComparator"));
+    QGuiApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/audio-ab-comparator.png")));
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     AudioEngine audioEngine;

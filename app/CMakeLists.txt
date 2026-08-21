@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 add_library(abcompare_core STATIC
     src/audio/AudioEngine.cpp
     src/audio/AudioEngine.h
@@ -11,6 +13,21 @@ target_link_libraries(abcompare_core PUBLIC Qt6::Core Qt6::Multimedia)
 qt_add_executable(ab-compare
     src/main.cpp
 )
+
+set(app_icon_png resources/audio-ab-comparator.png)
+set_source_files_properties(${app_icon_png} PROPERTIES
+    QT_RESOURCE_ALIAS audio-ab-comparator.png
+)
+qt_add_resources(ab-compare "application_icon"
+    PREFIX "/icons"
+    FILES ${app_icon_png}
+)
+
+if(WIN32)
+    target_sources(ab-compare PRIVATE
+        resources/windows/audio-ab-comparator.rc
+    )
+endif()
 
 target_compile_definitions(ab-compare PRIVATE
     AB_COMPARE_VERSION="${AB_COMPARE_RELEASE_VERSION}"
@@ -41,5 +58,16 @@ set_target_properties(ab-compare PROPERTIES
 
 install(TARGETS ab-compare
     BUNDLE DESTINATION .
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+if(UNIX AND NOT APPLE)
+    install(FILES resources/audio-ab-comparator.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+        RENAME io.github.KarmaGame33.AudioABComparator.svg
+    )
+
+    install(FILES resources/linux/io.github.KarmaGame33.AudioABComparator.desktop
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+    )
+endif()

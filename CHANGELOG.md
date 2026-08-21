@@ -2,6 +2,17 @@
 
 All notable changes to Audio A/B Comparator are documented in this file. The project follows Semantic Versioning; prerelease labels identify public beta builds.
 
+## [0.2.1-beta.3] - 2026-08-21
+
+### Added
+
+- a dedicated A/B application icon matching the interface colour palette, embedded in Linux and Windows builds;
+- Linux desktop metadata and a scalable application icon for desktop integration.
+
+### Fixed
+
+- KDE/Wayland task bars now resolve the branded A/B icon instead of the generic audio icon.
+
 ## [0.2.1-beta.2] - 2026-08-21
 
 ### Added
@@ -50,5 +61,6 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 - playback start, stop and resume behaviour.
 
+[0.2.1-beta.3]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.3
 [0.2.1-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.2
 [0.2.1-beta.1]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.1

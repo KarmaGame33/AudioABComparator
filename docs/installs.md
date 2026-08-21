@@ -241,7 +241,7 @@ Après un build et des tests réussis :
 Get-Content '.\dist\release\SHA256SUMS'
 ```
 
-Le script crée `AudioABComparator-0.2.1-beta.2-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md` et les textes LGPL. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
+Le script crée `AudioABComparator-0.2.1-beta.3-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md` et les textes LGPL. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
 
 ## 5. macOS — procédure préparée mais non validée
 
