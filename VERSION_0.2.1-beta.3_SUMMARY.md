@@ -7,7 +7,7 @@
 
 ## Résultat
 
-Cette préversion donne à Audio A/B Comparator une identité visuelle cohérente dans l’application, sous KDE/Wayland et dans l’exécutable Windows. Le moteur audio, les formats acceptés, le fonctionnement local et l’absence de télémétrie restent inchangés. Le SVN maître reste canonique et GitHub reste le miroir public officiel.
+Cette préversion donne à Audio A/B Comparator une identité visuelle cohérente dans l’application, sous KDE/Wayland et dans l’exécutable Windows. Le moteur audio, les formats acceptés, le fonctionnement local et l’absence de télémétrie restent inchangés. GitHub héberge le code source public et les téléchargements de cette préversion.
 
 ## Contenu de la version
 

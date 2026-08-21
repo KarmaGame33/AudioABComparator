@@ -7,7 +7,7 @@
 
 ## Résultat
 
-Audio A/B Comparator — KarmaApps par KarmaGame est publié comme logiciel libre sous GPL-3.0-or-later. Le SVN maître reste canonique ; le dépôt GitHub `KarmaGame33/AudioABComparator` en est le miroir public officiel. Le code source correspondant est fourni par le tag public, tandis que le ZIP Windows est distribué uniquement comme pièce jointe de GitHub Releases.
+Audio A/B Comparator — KarmaApps par KarmaGame est publié comme logiciel libre sous GPL-3.0-or-later. Le code source correspondant est fourni par le tag GitHub public, tandis que le ZIP Windows est distribué uniquement comme pièce jointe de GitHub Releases.
 
 Positionnement public : **“Free and open-source A/B audio comparator for mixing, mastering and blind listening tests.”**
 
@@ -20,7 +20,6 @@ Positionnement public : **“Free and open-source A/B audio comparator for mixin
 - modèles GitHub pour les bugs et demandes de fonctionnalité ;
 - captures réelles Windows, GIF de démonstration et aperçu social 1280×640 ;
 - instructions immédiates de compilation Linux ;
-- stratégie interne de diffusion dans `docs/strategie_diffusion_github.md`, volontairement exclue du miroir public avec `docs/SVN.md`.
 
 Cette version ne change aucune API applicative. Elle reprend les fonctionnalités de comparaison A/B, timeline commune, boucle, Blind Test, raccourcis et thèmes présentes sur le tronc, puis ajoute le cadre de licence, de validation et de publication.
 

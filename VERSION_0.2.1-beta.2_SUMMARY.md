@@ -7,7 +7,7 @@
 
 ## Résultat
 
-Cette préversion améliore la lisibilité de l’interface d’Audio A/B Comparator sans changer ses formats de fichiers, son fonctionnement local ni son absence de télémétrie. Le SVN maître reste canonique et GitHub reste le miroir public officiel.
+Cette préversion améliore la lisibilité de l’interface d’Audio A/B Comparator sans changer ses formats de fichiers, son fonctionnement local ni son absence de télémétrie. GitHub héberge le code source public et les téléchargements de cette préversion.
 
 ## Contenu de la version
 
