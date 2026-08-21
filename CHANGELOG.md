@@ -2,7 +2,7 @@
 
 All notable changes to Audio A/B Comparator are documented in this file. The project follows Semantic Versioning; prerelease labels identify public beta builds.
 
-## Unreleased
+## [0.2.1-beta.2] - 2026-08-21
 
 ### Added
 
@@ -50,4 +50,5 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 - playback start, stop and resume behaviour.
 
+[0.2.1-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.2
 [0.2.1-beta.1]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.1

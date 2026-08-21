@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$releaseVersion = '0.2.1-beta.1'
+$releaseVersion = '0.2.1-beta.2'
 $packageName = "AudioABComparator-$releaseVersion-windows-x86_64"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $buildPath = (Resolve-Path (Join-Path $repositoryRoot $BuildDirectory)).Path

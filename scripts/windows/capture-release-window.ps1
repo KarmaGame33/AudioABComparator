@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 if (-not $Executable) {
-    $Executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.2.1-beta.1-windows-x86_64\ab-compare.exe'
+    $Executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.2.1-beta.2-windows-x86_64\ab-compare.exe'
 }
 if (-not $Output) {
     $Output = Join-Path $repositoryRoot 'dist\media\audio-ab-comparator.png'

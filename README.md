@@ -10,7 +10,7 @@ Audio A/B Comparator is a portable desktop application by **KarmaApps by KarmaGa
 
 ## Download
 
-Version **0.2.1-beta.1** supports **Windows 10 and Windows 11 x64**. Download the portable ZIP and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
+Version **0.2.1-beta.2** supports **Windows 10 and Windows 11 x64**. Download the portable ZIP and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
 
 This beta is unsigned. Windows SmartScreen may display a warning because the executable has no Authenticode signature or established reputation. Verify the SHA-256 checksum, extract the complete ZIP, then run `ab-compare.exe` from the extracted folder.
 
@@ -50,4 +50,4 @@ Audio A/B Comparator is licensed under **GPL-3.0-or-later**. Runtime dependency 
 
 **Audio A/B Comparator — KarmaApps par KarmaGame** est un comparateur audio A/B libre destiné au mixage, au mastering et aux tests d’écoute à l’aveugle. Les fichiers restent sur votre ordinateur : aucun compte, aucun envoi dans le cloud et aucune télémétrie.
 
-La bêta **0.2.1-beta.1** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Elle n’est pas signée ; vérifiez `SHA256SUMS`, extrayez tout le dossier, puis lancez `ab-compare.exe`. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
+La bêta **0.2.1-beta.2** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Elle n’est pas signée ; vérifiez `SHA256SUMS`, extrayez tout le dossier, puis lancez `ab-compare.exe`. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).

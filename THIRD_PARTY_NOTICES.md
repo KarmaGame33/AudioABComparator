@@ -1,6 +1,6 @@
 # Third-party notices
 
-This inventory covers the libraries distributed in the official Windows 10/11 x64 portable build of Audio A/B Comparator 0.2.1-beta.1. The application source itself is licensed under GPL-3.0-or-later.
+This inventory covers the libraries distributed in the official Windows 10/11 x64 portable build of Audio A/B Comparator 0.2.1-beta.2. The application source itself is licensed under GPL-3.0-or-later.
 
 ## Qt 6.9.3
 

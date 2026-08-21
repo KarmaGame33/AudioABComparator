@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.2.1-beta.1-windows-x86_64\ab-compare.exe'
+$executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.2.1-beta.2-windows-x86_64\ab-compare.exe'
 $fixtures = 'C:\Dev\audioab-format-fixtures'
 $outputDirectory = Join-Path $repositoryRoot 'dist\media'
 
@@ -38,8 +38,15 @@ function Invoke-WindowClick([IntPtr]$handle, [int]$relativeX, [int]$relativeY) {
     [AudioABDemoCapture]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
 }
 
-function Open-AudioFile([IntPtr]$handle, [int]$relativeX, [string]$path) {
-    Invoke-WindowClick $handle $relativeX 174
+function Invoke-WindowClickRatio([IntPtr]$handle, [double]$xRatio, [double]$yRatio) {
+    $rectangle = Get-ApplicationRectangle $handle
+    $width = $rectangle.Right - $rectangle.Left
+    $height = $rectangle.Bottom - $rectangle.Top
+    Invoke-WindowClick $handle ([math]::Round($width * $xRatio)) ([math]::Round($height * $yRatio))
+}
+
+function Open-AudioFile([IntPtr]$handle, [double]$xRatio, [string]$path) {
+    Invoke-WindowClickRatio $handle $xRatio 0.205
     Start-Sleep -Milliseconds 700
     [System.Windows.Forms.SendKeys]::SendWait('%n')
     Start-Sleep -Milliseconds 200
@@ -77,17 +84,17 @@ try {
     $handle = $process.MainWindowHandle
     Start-Sleep -Seconds 1
 
-    Open-AudioFile $handle 560 (Join-Path $fixtures 'track-a.wav')
-    Open-AudioFile $handle 1160 (Join-Path $fixtures 'track-b.wav')
+    Open-AudioFile $handle 0.44 (Join-Path $fixtures 'track-a.wav')
+    Open-AudioFile $handle 0.925 (Join-Path $fixtures 'track-b.wav')
     Save-ApplicationWindow $handle (Join-Path $outputDirectory 'demo-1-loaded.png')
 
-    Invoke-WindowClick $handle 870 618
+    Invoke-WindowClickRatio $handle 0.755 0.71
     Start-Sleep -Milliseconds 700
-    Invoke-WindowClick $handle 985 618
+    Invoke-WindowClickRatio $handle 0.865 0.71
     Start-Sleep -Milliseconds 700
     Save-ApplicationWindow $handle (Join-Path $outputDirectory 'demo-2-switch.png')
 
-    Invoke-WindowClick $handle 680 80
+    Invoke-WindowClickRatio $handle 0.55 0.10
     Start-Sleep -Milliseconds 700
     Save-ApplicationWindow $handle (Join-Path $outputDirectory 'demo-3-blind.png')
 } finally {
