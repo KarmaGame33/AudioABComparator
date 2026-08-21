@@ -78,7 +78,7 @@ See [`docs/installs.md`](docs/installs.md) for Windows, native Linux and reprodu
 
 ## Project and contributions
 
-This GitHub repository is the official public **mirror**. Development remains canonical in the private SVN master, and each public Git tag corresponds to an immutable SVN release tag. Issues are the feedback channel for bugs and feature requests. Pull requests are not processed for now; see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Issues are the feedback channel for bugs and feature requests. Pull requests are not processed for now; see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Audio A/B Comparator is licensed under **GPL-3.0-or-later**. Runtime dependency notices and source links are in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
