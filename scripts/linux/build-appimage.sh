@@ -79,7 +79,9 @@ appstreamcli validate --no-net \
 export QMAKE="$QT_ROOT/bin/qmake"
 export LD_LIBRARY_PATH="$QT_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export QML_SOURCES_PATHS="$source_dir/app/ui"
-export EXTRA_QT_MODULES="multimedia;svg"
+# linuxdeploy-plugin-qt associates the Wayland client graphics integrations
+# (including wayland-egl) with its waylandcompositor module deployer.
+export EXTRA_QT_MODULES="multimedia;svg;waylandcompositor"
 export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
 export LINUXDEPLOY_OUTPUT_VERSION="$release_version"
 export LDAI_OUTPUT="$output_dir/$appimage_name"
@@ -94,6 +96,18 @@ cd "$work_dir"
     --output appimage
 
 test -x "$output_dir/$appimage_name"
+
+# A QML smoke test exits before the first rendered frame. Inspect the package as
+# well so a Wayland build cannot be published without its EGL client plugin.
+inspection_dir="$work_dir/AppImageInspection"
+mkdir "$inspection_dir"
+(
+    cd "$inspection_dir"
+    "$output_dir/$appimage_name" --appimage-extract >/dev/null
+)
+test -f \
+    "$inspection_dir/squashfs-root/usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so"
+
 (cd "$output_dir" && sha256sum "$appimage_name" > SHA256SUMS-linux)
 
 echo "AppImage: $output_dir/$appimage_name"

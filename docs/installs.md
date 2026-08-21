@@ -123,6 +123,7 @@ Docker doit être installé et accessible à l’utilisateur courant. Depuis la 
 ```
 
 Le script construit l’application dans une image Ubuntu 22.04 LTS figée, installe Qt 6.9.3, exécute CTest avec des pistes WAV, FLAC et MP3 et assemble les plugins Qt Multimedia, XCB et Wayland. Les outils `linuxdeploy` et `linuxdeploy-plugin-qt` téléchargés sont contrôlés par SHA-256.
+La construction vérifie aussi que l’intégration cliente Qt Wayland-EGL est réellement présente dans l’AppImage finale.
 
 Les fichiers produits sont :
 
@@ -136,7 +137,11 @@ Validation locale :
 ```fish
 chmod +x dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
 ./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage --smoke-test
+./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
 ```
+
+Les deux derniers lancements doivent afficher et maintenir la fenêtre, respectivement sous Wayland natif et XWayland/XCB. Ils sont indispensables : le smoke test seul se termine avant l’initialisation du rendu de la première trame.
 
 Le compte rendu détaillé se trouve dans [`validation_linux.md`](validation_linux.md).
 

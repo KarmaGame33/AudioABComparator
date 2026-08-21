@@ -18,7 +18,7 @@ This beta is unsigned. Microsoft Defender SmartScreen may warn about a new execu
 
 ## Linux download
 
-Download `AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage`, verify it with the attached `SHA256SUMS`, make it executable and run it directly. No installation or administrator rights are required. The AppImage has been validated on KDE Plasma with native Wayland and XWayland; an interactive Ubuntu GNOME validation remains pending.
+Download `AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage`, verify it with the attached `SHA256SUMS`, make it executable and run it directly. No installation or administrator rights are required. The corrected AppImage includes Qt's Wayland-EGL client integration and has been validated with real window launches on KDE Plasma under native Wayland and XWayland; an interactive Ubuntu GNOME validation remains pending. If you downloaded the earlier Linux file, replace it with the current asset whose SHA-256 starts with `c8841a81`.
 
 Known beta limits: no signed installer, no macOS build, Ubuntu GNOME has not yet received a full interactive test, and there is no guarantee that every codec variant supported by FFmpeg has been exercised. Please report reproducible problems through [GitHub Issues](https://github.com/KarmaGame33/AudioABComparator/issues).
 
@@ -38,6 +38,6 @@ Le ZIP portable prend en charge **Windows 10 et Windows 11 x64**. Vérifiez-le a
 
 Cette bêta n’est pas signée : Microsoft Defender SmartScreen peut signaler un exécutable récent sans réputation établie. Vérifiez la provenance GitHub et l’empreinte SHA-256 avant de l’exécuter.
 
-Pour Linux, téléchargez `AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage`, vérifiez son empreinte avec `SHA256SUMS`, rendez-la exécutable avec `chmod +x`, puis lancez-la directement. Aucun installeur ni droit administrateur n’est nécessaire. L’AppImage a été validée sous KDE Plasma en Wayland natif et via XWayland ; l’essai interactif complet sous Ubuntu GNOME reste à effectuer.
+Pour Linux, téléchargez `AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage`, vérifiez son empreinte avec `SHA256SUMS`, rendez-la exécutable avec `chmod +x`, puis lancez-la directement. Aucun installeur ni droit administrateur n’est nécessaire. L’AppImage corrigée intègre le composant client Qt Wayland-EGL et a été validée par de vrais lancements de fenêtre sous KDE Plasma en Wayland natif et via XWayland ; l’essai interactif complet sous Ubuntu GNOME reste à effectuer. Si vous aviez téléchargé le premier fichier Linux, remplacez-le par l’artefact actuel dont l’empreinte SHA-256 commence par `c8841a81`.
 
 Limites connues : pas d’installeur signé, pas de build macOS, validation interactive Ubuntu GNOME encore à compléter et couverture non exhaustive de toutes les variantes de codecs. Signalez les problèmes reproductibles dans les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).

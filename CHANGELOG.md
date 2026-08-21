@@ -14,6 +14,7 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 ### Fixed
 
 - KDE/Wayland task bars now resolve the branded A/B icon instead of the generic audio icon.
+- the Linux AppImage now includes Qt's Wayland-EGL client integration, preventing an OpenGL/RHI startup crash under native Wayland.
 
 ## [0.2.1-beta.2] - 2026-08-21
 
