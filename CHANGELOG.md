@@ -2,6 +2,20 @@
 
 All notable changes to Audio A/B Comparator are documented in this file. The project follows Semantic Versioning; prerelease labels identify public beta builds.
 
+## Unreleased
+
+### Added
+
+- a clear popup explains that both tracks must be loaded before starting a Blind Test.
+
+### Changed
+
+- action buttons now use a modern rounded style with explicit hover, pressed, focus and highlighted states;
+- the transient action text beside Settings has been removed from the header;
+- track replacement controls are hidden throughout Blind Test mode;
+- start/end selection now uses a clearly labelled control row between the two waveforms, while waveform dragging remains dedicated to the playhead;
+- revealed Blind Test results now offer a single centered `Recommencer` action that resets the session, randomly selects a track and immediately resumes playback.
+
 ## [0.2.1-beta.1] - 2026-08-20
 
 ### Added

@@ -345,6 +345,8 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
 
     engine.startBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRunning);
+    engine.votePositive();
+    QCOMPARE(engine.blindVoteCount(), 1);
     const double positionBeforeReveal = engine.position();
     engine.revealBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRevealed);
@@ -353,10 +355,13 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
     QVERIFY(revealedPosition >= positionBeforeReveal);
     QTest::qWait(200);
     QCOMPARE(engine.position(), revealedPosition);
-    engine.returnToExpress();
 
-    engine.play();
+    engine.restartBlindSession();
+    QCOMPARE(engine.listeningMode(), AudioEngine::BlindRunning);
+    QCOMPARE(engine.blindVoteCount(), 0);
+    QVERIFY(engine.playing());
     QTRY_VERIFY_WITH_TIMEOUT(engine.position() > revealedPosition + 0.05, 3'000);
+
     engine.pause();
     const double positionBeforeBackward = engine.position();
     engine.seekBackward();

@@ -534,6 +534,12 @@ void AudioEngine::startBlindSession()
     emit statusChanged();
 }
 
+void AudioEngine::restartBlindSession()
+{
+    startBlindSession();
+    play();
+}
+
 void AudioEngine::revealBlindSession()
 {
     if (!blindRunning()) {

@@ -68,8 +68,52 @@ ApplicationWindow {
         anchors.centerIn: parent
         title: "Réinitialiser les évaluations ?"
         modal: true
-        standardButtons: Dialog.Yes | Dialog.No
-        onAccepted: audioEngine.resetVotes()
+        background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
+
+        footer: Item {
+            implicitHeight: 58
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 10
+                Item { Layout.fillWidth: true }
+                AppButton { text: "Annuler"; onClicked: resetDialog.reject() }
+                AppButton {
+                    text: "Réinitialiser"
+                    highlighted: true
+                    onClicked: {
+                        audioEngine.resetVotes()
+                        resetDialog.accept()
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: blindTracksDialog
+        width: 460
+        anchors.centerIn: parent
+        modal: true
+        title: "Blind Test indisponible"
+        closePolicy: Popup.CloseOnEscape
+        background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
+
+        contentItem: Label {
+            text: "Chargez d’abord les deux pistes A et B et attendez la fin de leur analyse avant de lancer le Blind Test."
+            color: window.textPrimary
+            wrapMode: Text.WordWrap
+        }
+
+        footer: Item {
+            implicitHeight: 58
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                Item { Layout.fillWidth: true }
+                AppButton { text: "Compris"; highlighted: true; onClicked: blindTracksDialog.accept() }
+            }
+        }
     }
 
     Dialog {
@@ -78,7 +122,6 @@ ApplicationWindow {
         anchors.centerIn: parent
         modal: true
         title: "Paramètres / Raccourcis"
-        standardButtons: Dialog.Close
 
         background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
 
@@ -132,15 +175,56 @@ ApplicationWindow {
             }
             AppButton { text: "Restaurer les raccourcis par défaut"; onClicked: audioEngine.resetShortcuts() }
         }
+
+        footer: Item {
+            implicitHeight: 58
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                Item { Layout.fillWidth: true }
+                AppButton { text: "Fermer"; highlighted: true; onClicked: settingsDialog.accept() }
+            }
+        }
     }
 
     component AppButton: Button {
+        id: control
+        implicitHeight: 38
+        implicitWidth: Math.max(104, contentItem.implicitWidth + leftPadding + rightPadding)
+        leftPadding: 18
+        rightPadding: 18
+        topPadding: 8
+        bottomPadding: 8
+        hoverEnabled: true
         opacity: enabled ? 1.0 : 0.55
-        palette.button: window.controlColor
-        palette.buttonText: window.textPrimary
-        palette.brightText: "#07110f"
-        palette.dark: window.colorA
-        palette.mid: window.darkMode ? "#3a465a" : "#aab6c5"
+
+        contentItem: Label {
+            text: control.text
+            color: control.highlighted ? "#07110f" : window.textPrimary
+            font.family: control.font.family
+            font.pixelSize: control.font.pixelSize
+            font.weight: Font.DemiBold
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        background: Rectangle {
+            radius: 10
+            color: control.highlighted
+                ? (control.down ? Qt.darker(window.colorA, 1.12) : (control.hovered ? Qt.lighter(window.colorA, 1.08) : window.colorA))
+                : (control.down
+                    ? (window.darkMode ? "#18202c" : "#dce6f0")
+                    : (control.hovered
+                        ? (window.darkMode ? "#2b3547" : "#edf4f8")
+                        : (window.darkMode ? "#222a38" : "#ffffff")))
+            border.width: control.activeFocus ? 2 : 1
+            border.color: control.highlighted
+                ? Qt.darker(window.colorA, 1.25)
+                : (control.activeFocus ? window.colorA : window.borderColor)
+
+            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on border.color { ColorAnimation { duration: 100 } }
+        }
     }
 
     component AppSwitch: Switch {
@@ -159,6 +243,7 @@ ApplicationWindow {
         required property bool loaded
         required property color accent
         required property bool active
+        required property bool allowFileSelection
         signal chooseFile()
 
         radius: 14
@@ -187,7 +272,11 @@ ApplicationWindow {
                     font.pixelSize: 15
                 }
             }
-            AppButton { text: loaded ? "Remplacer" : "Choisir"; onClicked: chooseFile() }
+            AppButton {
+                visible: allowFileSelection
+                text: loaded ? "Remplacer" : "Choisir"
+                onClicked: chooseFile()
+            }
         }
     }
 
@@ -315,7 +404,7 @@ ApplicationWindow {
                         height: parent.height
                         hoverEnabled: true
                         flat: true
-                        enabled: audioEngine.ready && !audioEngine.blindRunning
+                        enabled: !audioEngine.blindRunning
 
                         background: Rectangle {
                             radius: 10
@@ -338,7 +427,10 @@ ApplicationWindow {
                                 font.bold: true
                             }
                         }
-                        onClicked: audioEngine.startBlindSession()
+                        onClicked: {
+                            if (audioEngine.ready) audioEngine.startBlindSession()
+                            else blindTracksDialog.open()
+                        }
                     }
                 }
             }
@@ -349,13 +441,7 @@ ApplicationWindow {
                 RowLayout {
                     anchors.fill: parent
                     spacing: 10
-                    Label {
-                        Layout.fillWidth: true
-                        text: audioEngine.loading ? "Analyse…" : audioEngine.statusMessage
-                        color: window.textSecondary
-                        elide: Text.ElideRight
-                        horizontalAlignment: Text.AlignRight
-                    }
+                    Item { Layout.fillWidth: true }
                     AppButton { text: "⚙ Paramètres"; onClicked: settingsDialog.open() }
                 }
             }
@@ -377,12 +463,14 @@ ApplicationWindow {
                 Layout.fillWidth: true; Layout.fillHeight: true
                 letter: "A"; fileName: audioEngine.trackAName; loaded: audioEngine.loadedA
                 accent: window.colorA; active: audioEngine.ready && !audioEngine.blindRunning && audioEngine.activeTrack === 0
+                allowFileSelection: !modeSelector.blindSelected
                 onChooseFile: fileA.open()
             }
             TrackCard {
                 Layout.fillWidth: true; Layout.fillHeight: true
                 letter: "B"; fileName: audioEngine.trackBName; loaded: audioEngine.loadedB
                 accent: window.colorB; active: audioEngine.ready && !audioEngine.blindRunning && audioEngine.activeTrack === 1
+                allowFileSelection: !modeSelector.blindSelected
                 onChooseFile: fileB.open()
             }
         }
@@ -503,11 +591,12 @@ ApplicationWindow {
                     enabled: audioEngine.hasVotes
                     onClicked: resetDialog.open()
                 }
-                ColumnLayout {
+                AppButton {
                     visible: audioEngine.blindRevealed
-                    spacing: 8
-                    AppButton { text: "Nouvelle session"; onClicked: audioEngine.startBlindSession() }
-                    AppButton { text: "Retour Express"; onClicked: audioEngine.returnToExpress() }
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "Recommencer"
+                    highlighted: true
+                    onClicked: audioEngine.restartBlindSession()
                 }
             }
 

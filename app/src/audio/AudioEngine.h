@@ -138,6 +138,7 @@ public:
     Q_INVOKABLE void toggleTrack();
     Q_INVOKABLE void triggerTrackSelection();
     Q_INVOKABLE void startBlindSession();
+    Q_INVOKABLE void restartBlindSession();
     Q_INVOKABLE void revealBlindSession();
     Q_INVOKABLE void returnToExpress();
     Q_INVOKABLE void votePositive();
