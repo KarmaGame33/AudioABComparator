@@ -1,6 +1,7 @@
 #include "audio/AudioEngine.h"
 
 #include <QAudioDevice>
+#include <QCoreApplication>
 #include <QFileInfo>
 #include <QMediaDevices>
 #include <QRandomGenerator>
@@ -32,6 +33,7 @@ AudioEngine::AudioEngine(QObject *parent)
     m_transitionBeepEnabled = m_settings.value(QStringLiteral("audio/transitionBeepEnabled"), false).toBool();
     m_transitionBeepVolume = std::clamp(m_settings.value(QStringLiteral("audio/transitionBeepVolume"), 65).toInt(), 0, 100);
     m_darkMode = m_settings.value(QStringLiteral("ui/darkMode"), true).toBool();
+    setStatusMessage(QT_TR_NOOP("Load two audio files to begin"));
     m_pcmDevice.setTransitionBeepVolume(static_cast<float>(m_transitionBeepVolume) / 100.0F);
 
     m_decoderA.setAudioFormat(m_format);
@@ -121,14 +123,14 @@ void AudioEngine::loadB(const QUrl &url) { load(Track::B, url); }
 void AudioEngine::load(Track track, const QUrl &url)
 {
     if (!url.isLocalFile()) {
-        m_errorMessage = QStringLiteral("Seuls les fichiers locaux sont acceptés.");
+        setErrorMessage(QT_TR_NOOP("Only local files are accepted."));
         emit statusChanged();
         return;
     }
 
     resetBlindState(true);
     stop();
-    m_errorMessage.clear();
+    clearErrorMessage();
     m_ready = false;
     emit readyChanged();
 
@@ -155,7 +157,7 @@ void AudioEngine::load(Track track, const QUrl &url)
     }
 
     resetVotes();
-    m_statusMessage = QStringLiteral("Décodage de %1…").arg(name);
+    setStatusMessage(QT_TR_NOOP("Decoding %1…"), {name});
     emit tracksChanged();
     emit loadingChanged();
     emit statusChanged();
@@ -168,7 +170,7 @@ void AudioEngine::appendBuffer(Track track, const QAudioBuffer &buffer)
         return;
     }
     if (buffer.format() != m_format) {
-        m_errorMessage = QStringLiteral("Le backend audio n'a pas fourni le format PCM commun demandé.");
+        setErrorMessage(QT_TR_NOOP("The audio backend did not provide the requested common PCM format."));
         emit statusChanged();
         return;
     }
@@ -214,9 +216,9 @@ void AudioEngine::decoderError(Track track, QAudioDecoder::Error error)
         m_loadingB = false;
         m_loadedB = false;
     }
-    m_errorMessage = QStringLiteral("Impossible de décoder la piste %1 : %2")
-        .arg(track == Track::A ? QStringLiteral("A") : QStringLiteral("B"), decoder.errorString());
-    m_statusMessage = QStringLiteral("Chargement interrompu");
+    setErrorMessage(QT_TR_NOOP("Unable to decode track %1: %2"),
+        {track == Track::A ? QStringLiteral("A") : QStringLiteral("B"), decoder.errorString()});
+    setStatusMessage(QT_TR_NOOP("Loading interrupted"));
     emit tracksChanged();
     emit loadingChanged();
     emit statusChanged();
@@ -225,7 +227,7 @@ void AudioEngine::decoderError(Track track, QAudioDecoder::Error error)
 void AudioEngine::updateReadyState()
 {
     if (!m_loadedA || !m_loadedB || m_format.bytesPerFrame() <= 0) {
-        m_statusMessage = QStringLiteral("Chargez les deux pistes");
+        setStatusMessage(QT_TR_NOOP("Load both tracks"));
         emit statusChanged();
         return;
     }
@@ -236,8 +238,8 @@ void AudioEngine::updateReadyState()
     m_duration = framesToSeconds(commonFrames);
 
     if (m_duration < minimumSelectionSeconds) {
-        m_errorMessage = QStringLiteral("La durée commune doit être d'au moins 5 secondes.");
-        m_statusMessage = QStringLiteral("Paire audio trop courte");
+        setErrorMessage(QT_TR_NOOP("The common duration must be at least 5 seconds."));
+        setStatusMessage(QT_TR_NOOP("Audio pair is too short"));
         emit readyChanged();
         emit statusChanged();
         return;
@@ -252,8 +254,8 @@ void AudioEngine::updateReadyState()
     m_pcmDevice.setLoopEnabled(m_loopEnabled);
     m_pcmDevice.setActiveTrack(0);
     rebuildAudioOutput();
-    m_statusMessage = QStringLiteral("Prêt — la première lecture commencera sur A");
-    m_errorMessage.clear();
+    setStatusMessage(QT_TR_NOOP("Ready — first playback will start on A"));
+    clearErrorMessage();
     emit readyChanged();
     emit selectionChanged();
     emit positionChanged();
@@ -285,8 +287,8 @@ void AudioEngine::play()
     }
 
     if (!m_pcmDevice.isOpen() || m_pcmDevice.bytesAvailable() <= 0) {
-        m_errorMessage = QStringLiteral("Aucune donnée audio n'est disponible pour la lecture.");
-        m_statusMessage = QStringLiteral("Lecture audio impossible");
+        setErrorMessage(QT_TR_NOOP("No audio data is available for playback."));
+        setStatusMessage(QT_TR_NOOP("Audio playback unavailable"));
         emit statusChanged();
         return;
     }
@@ -308,10 +310,12 @@ void AudioEngine::play()
     m_playing = true;
     m_paused = false;
     m_positionTimer.start();
-    m_errorMessage.clear();
-    m_statusMessage = blindRunning()
-        ? QStringLiteral("Lecture en aveugle")
-        : QStringLiteral("Lecture de la piste %1").arg(activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    clearErrorMessage();
+    if (blindRunning()) {
+        setStatusMessage(QT_TR_NOOP("Blind playback"));
+    } else {
+        setStatusMessage(QT_TR_NOOP("Playing track %1"), {activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
+    }
     emit transportChanged();
     emit statusChanged();
 }
@@ -336,23 +340,23 @@ void AudioEngine::reportAudioError(QtAudio::Error error)
 
     switch (error) {
     case QtAudio::OpenError:
-        m_errorMessage = QStringLiteral("Impossible d'ouvrir le périphérique de sortie audio.");
+        setErrorMessage(QT_TR_NOOP("Unable to open the audio output device."));
         break;
     case QtAudio::IOError:
-        m_errorMessage = QStringLiteral("Le périphérique audio a rencontré une erreur d'entrée/sortie.");
+        setErrorMessage(QT_TR_NOOP("The audio device encountered an input/output error."));
         break;
     case QtAudio::UnderrunError:
-        m_errorMessage = QStringLiteral("Le flux audio n'alimente pas la sortie assez rapidement.");
+        setErrorMessage(QT_TR_NOOP("The audio stream is not feeding the output quickly enough."));
         break;
     case QtAudio::FatalError:
-        m_errorMessage = QStringLiteral("Le backend audio a rencontré une erreur fatale.");
+        setErrorMessage(QT_TR_NOOP("The audio backend encountered a fatal error."));
         break;
     case QtAudio::NoError:
-        m_errorMessage = QStringLiteral("La sortie audio s'est arrêtée avant le démarrage.");
+        setErrorMessage(QT_TR_NOOP("The audio output stopped before playback started."));
         break;
     }
 
-    m_statusMessage = QStringLiteral("Lecture audio impossible");
+    setStatusMessage(QT_TR_NOOP("Audio playback unavailable"));
     emit transportChanged();
     emit statusChanged();
 }
@@ -368,9 +372,11 @@ void AudioEngine::pause()
     m_playing = false;
     m_paused = true;
     m_position = framesToSeconds(m_pcmDevice.positionFrame());
-    m_statusMessage = blindRunning()
-        ? QStringLiteral("Pause en aveugle")
-        : QStringLiteral("Pause sur la piste %1").arg(activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    if (blindRunning()) {
+        setStatusMessage(QT_TR_NOOP("Blind playback paused"));
+    } else {
+        setStatusMessage(QT_TR_NOOP("Paused on track %1"), {activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
+    }
     emit transportChanged();
     emit positionChanged();
     emit statusChanged();
@@ -404,7 +410,7 @@ void AudioEngine::seekForward()
 
 void AudioEngine::seekTo(double seconds)
 {
-    seekToPosition(seconds, QStringLiteral("Position déplacée"));
+    seekToPosition(seconds, QT_TR_NOOP("Position moved"));
 }
 
 void AudioEngine::seekBy(double seconds)
@@ -412,11 +418,11 @@ void AudioEngine::seekBy(double seconds)
     const double currentPosition = framesToSeconds(m_pcmDevice.positionFrame());
     const double targetPosition = std::clamp(currentPosition + seconds, m_selectionStart, m_selectionEnd);
     seekToPosition(targetPosition, seconds < 0.0
-        ? QStringLiteral("Retour de 5 secondes")
-        : QStringLiteral("Avance de 5 secondes"));
+        ? QT_TR_NOOP("Moved back 5 seconds")
+        : QT_TR_NOOP("Moved forward 5 seconds"));
 }
 
-void AudioEngine::seekToPosition(double seconds, const QString &statusMessage)
+void AudioEngine::seekToPosition(double seconds, const char *statusSource)
 {
     if (!m_ready || !m_audioSink) {
         return;
@@ -450,7 +456,7 @@ void AudioEngine::seekToPosition(double seconds, const QString &statusMessage)
         }
     }
 
-    m_statusMessage = statusMessage;
+    setStatusMessage(statusSource);
     emit statusChanged();
 }
 
@@ -477,7 +483,7 @@ void AudioEngine::triggerTrackSelection()
     if (shouldTriggerTransitionBeep(m_transitionBeepEnabled, m_playing, true)) {
         m_pcmDevice.triggerTransitionBeep();
     }
-    m_statusMessage = QStringLiteral("Piste %1 active").arg(activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    setStatusMessage(QT_TR_NOOP("Track %1 active"), {activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
     emit activeTrackChanged();
     emit statusChanged();
 }
@@ -512,7 +518,7 @@ void AudioEngine::selectBlindTrack(bool selectionCommand)
     if (shouldTriggerTransitionBeep(m_transitionBeepEnabled, m_playing, selectionCommand)) {
         m_pcmDevice.triggerTransitionBeep();
     }
-    m_statusMessage = QStringLiteral("Sélection aveugle mise à jour");
+    setStatusMessage(QT_TR_NOOP("Blind selection updated"));
     emit activeTrackChanged();
     emit statusChanged();
 }
@@ -528,7 +534,7 @@ void AudioEngine::startBlindSession()
     m_blindConsecutiveCount = 0;
     m_listeningMode = BlindRunning;
     selectBlindTrack(false);
-    m_statusMessage = QStringLiteral("Session Blind Test en cours");
+    setStatusMessage(QT_TR_NOOP("Blind Test session in progress"));
     emit blindScoresChanged();
     emit listeningModeChanged();
     emit statusChanged();
@@ -549,8 +555,8 @@ void AudioEngine::revealBlindSession()
         pause();
     }
     m_listeningMode = BlindRevealed;
-    m_statusMessage = QStringLiteral("Résultats révélés — piste %1 active")
-        .arg(activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    setStatusMessage(QT_TR_NOOP("Results revealed — track %1 active"),
+        {activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
     emit listeningModeChanged();
     emit activeTrackChanged();
     emit statusChanged();
@@ -566,8 +572,8 @@ void AudioEngine::returnToExpress()
         return;
     }
     m_listeningMode = Express;
-    m_statusMessage = QStringLiteral("Mode Express — piste %1 active")
-        .arg(activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    setStatusMessage(QT_TR_NOOP("Express mode — track %1 active"),
+        {activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
     emit listeningModeChanged();
     emit activeTrackChanged();
     emit statusChanged();
@@ -588,9 +594,8 @@ void AudioEngine::vote(int delta)
         } else {
             delta > 0 ? ++m_blindPositiveB : ++m_blindNegativeB;
         }
-        m_statusMessage = QStringLiteral("%1 enregistré — %2 vote(s)")
-            .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("−1"))
-            .arg(blindVoteCount());
+        setStatusMessage(QT_TR_NOOP("%1 recorded — %2 vote(s)"),
+            {delta > 0 ? QStringLiteral("+1") : QStringLiteral("−1"), QString::number(blindVoteCount())});
         emit blindScoresChanged();
         emit statusChanged();
         return;
@@ -601,8 +606,8 @@ void AudioEngine::vote(int delta)
     } else {
         delta > 0 ? ++m_positiveB : ++m_negativeB;
     }
-    m_statusMessage = QStringLiteral("%1 attribué à la piste %2")
-        .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("−1"), activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B"));
+    setStatusMessage(QT_TR_NOOP("%1 assigned to track %2"),
+        {delta > 0 ? QStringLiteral("+1") : QStringLiteral("−1"), activeTrack() == 0 ? QStringLiteral("A") : QStringLiteral("B")});
     emit scoresChanged();
     emit statusChanged();
 }
@@ -641,6 +646,47 @@ void AudioEngine::resetShortcuts()
     saveShortcut(QStringLiteral("shortcuts/seekBackward"), m_seekBackwardShortcut);
     saveShortcut(QStringLiteral("shortcuts/seekForward"), m_seekForwardShortcut);
     emit shortcutsChanged();
+}
+
+void AudioEngine::retranslate()
+{
+    m_statusMessage = translatedMessage(m_statusSource, m_statusArguments);
+    m_errorMessage = translatedMessage(m_errorSource, m_errorArguments);
+    emit statusChanged();
+}
+
+void AudioEngine::setStatusMessage(const char *source, const QStringList &arguments)
+{
+    m_statusSource = source;
+    m_statusArguments = arguments;
+    m_statusMessage = translatedMessage(m_statusSource, m_statusArguments);
+}
+
+void AudioEngine::setErrorMessage(const char *source, const QStringList &arguments)
+{
+    m_errorSource = source;
+    m_errorArguments = arguments;
+    m_errorMessage = translatedMessage(m_errorSource, m_errorArguments);
+}
+
+void AudioEngine::clearErrorMessage()
+{
+    m_errorSource.clear();
+    m_errorArguments.clear();
+    m_errorMessage.clear();
+}
+
+QString AudioEngine::translatedMessage(const QByteArray &source, const QStringList &arguments) const
+{
+    if (source.isEmpty()) {
+        return {};
+    }
+
+    QString message = QCoreApplication::translate("AudioEngine", source.constData());
+    for (const QString &argument : arguments) {
+        message = message.arg(argument);
+    }
+    return message;
 }
 
 QString AudioEngine::formatTime(double seconds) const
@@ -797,7 +843,7 @@ void AudioEngine::updatePosition()
     m_position = framesToSeconds(m_pcmDevice.positionFrame());
     if (m_pcmDevice.reachedEnd() && !m_loopEnabled) {
         stop();
-        m_statusMessage = QStringLiteral("Fin de la sélection");
+        setStatusMessage(QT_TR_NOOP("End of selection"));
         emit statusChanged();
         return;
     }

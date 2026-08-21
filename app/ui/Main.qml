@@ -13,6 +13,7 @@ ApplicationWindow {
     visible: true
     title: "Audio A/B Comparator — v" + Qt.application.version
     color: window.backgroundColor
+    readonly property string translationProbe: qsTr("Settings / Shortcuts")
 
     readonly property bool darkMode: audioEngine.darkMode
     readonly property color colorA: "#44d1b6"
@@ -52,21 +53,21 @@ ApplicationWindow {
 
     FileDialog {
         id: fileA
-        title: "Choisir la piste A"
-        nameFilters: ["Audio (*.wav *.wave *.flac *.aif *.aiff *.mp3 *.ogg)", "Tous les fichiers (*)"]
+        title: qsTr("Choose track A")
+        nameFilters: [qsTr("Audio (*.wav *.wave *.flac *.aif *.aiff *.mp3 *.ogg)"), qsTr("All files (*)")]
         onAccepted: audioEngine.loadA(selectedFile)
     }
     FileDialog {
         id: fileB
-        title: "Choisir la piste B"
-        nameFilters: ["Audio (*.wav *.wave *.flac *.aif *.aiff *.mp3 *.ogg)", "Tous les fichiers (*)"]
+        title: qsTr("Choose track B")
+        nameFilters: [qsTr("Audio (*.wav *.wave *.flac *.aif *.aiff *.mp3 *.ogg)"), qsTr("All files (*)")]
         onAccepted: audioEngine.loadB(selectedFile)
     }
 
     Dialog {
         id: resetDialog
         anchors.centerIn: parent
-        title: "Réinitialiser les évaluations ?"
+        title: qsTr("Reset ratings?")
         modal: true
         background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
 
@@ -77,9 +78,9 @@ ApplicationWindow {
                 anchors.margins: 10
                 spacing: 10
                 Item { Layout.fillWidth: true }
-                AppButton { text: "Annuler"; onClicked: resetDialog.reject() }
+                AppButton { text: qsTr("Cancel"); onClicked: resetDialog.reject() }
                 AppButton {
-                    text: "Réinitialiser"
+                    text: qsTr("Reset")
                     highlighted: true
                     onClicked: {
                         audioEngine.resetVotes()
@@ -95,12 +96,12 @@ ApplicationWindow {
         width: 460
         anchors.centerIn: parent
         modal: true
-        title: "Blind Test indisponible"
+        title: qsTr("Blind Test unavailable")
         closePolicy: Popup.CloseOnEscape
         background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
 
         contentItem: Label {
-            text: "Chargez d’abord les deux pistes A et B et attendez la fin de leur analyse avant de lancer le Blind Test."
+            text: qsTr("Load both tracks A and B and wait for their analysis to finish before starting the Blind Test.")
             color: window.textPrimary
             wrapMode: Text.WordWrap
         }
@@ -111,7 +112,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 anchors.margins: 10
                 Item { Layout.fillWidth: true }
-                AppButton { text: "Compris"; highlighted: true; onClicked: blindTracksDialog.accept() }
+                AppButton { text: qsTr("Got it"); highlighted: true; onClicked: blindTracksDialog.accept() }
             }
         }
     }
@@ -121,26 +122,26 @@ ApplicationWindow {
         width: 520
         anchors.centerIn: parent
         modal: true
-        title: "Paramètres / Raccourcis"
+        title: qsTr("Settings / Shortcuts")
 
         background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
 
         contentItem: ColumnLayout {
             spacing: 16
-            Label { text: "Raccourcis clavier"; color: window.textPrimary; font.pixelSize: 20; font.bold: true }
+            Label { text: qsTr("Keyboard shortcuts"); color: window.textPrimary; font.pixelSize: 20; font.bold: true }
             Label {
                 Layout.fillWidth: true
-                text: "Chaque action doit utiliser une touche différente. Les changements sont conservés localement."
+                text: qsTr("Each action must use a different key. Changes are stored locally.")
                 color: window.textSecondary
                 wrapMode: Text.WordWrap
             }
             Repeater {
                 model: [
-                    { key: "switch", label: "Basculer A/B", value: audioEngine.switchShortcut, choices: ["Space", "Tab", "S"] },
-                    { key: "positive", label: "Appréciation +1", value: audioEngine.positiveShortcut, choices: ["Up", "+", "P"] },
-                    { key: "negative", label: "Appréciation −1", value: audioEngine.negativeShortcut, choices: ["Down", "-", "M"] },
-                    { key: "backward", label: "Retour de 5 secondes", value: audioEngine.seekBackwardShortcut, choices: ["Left", "J", "A"] },
-                    { key: "forward", label: "Avance de 5 secondes", value: audioEngine.seekForwardShortcut, choices: ["Right", "L", "D"] }
+                    { key: "switch", label: qsTr("Switch A/B"), value: audioEngine.switchShortcut, choices: ["Space", "Tab", "S"] },
+                    { key: "positive", label: qsTr("Positive rating +1"), value: audioEngine.positiveShortcut, choices: ["Up", "+", "P"] },
+                    { key: "negative", label: qsTr("Negative rating −1"), value: audioEngine.negativeShortcut, choices: ["Down", "-", "M"] },
+                    { key: "backward", label: qsTr("Move back 5 seconds"), value: audioEngine.seekBackwardShortcut, choices: ["Left", "J", "A"] },
+                    { key: "forward", label: qsTr("Move forward 5 seconds"), value: audioEngine.seekForwardShortcut, choices: ["Right", "L", "D"] }
                 ]
                 delegate: RowLayout {
                     required property var modelData
@@ -162,18 +163,39 @@ ApplicationWindow {
             Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: window.borderColor }
             RowLayout {
                 Layout.fillWidth: true
+                Label { Layout.fillWidth: true; text: qsTr("Language"); color: window.textPrimary; font.pixelSize: 16; font.bold: true }
+                ComboBox {
+                    id: languageSelector
+                    readonly property var languageCodes: ["en", "fr", "de", "es", "pt_BR", "ja", "zh_CN"]
+                    model: [
+                        { code: "en", label: qsTr("English") },
+                        { code: "fr", label: qsTr("French") },
+                        { code: "de", label: qsTr("German") },
+                        { code: "es", label: qsTr("Spanish") },
+                        { code: "pt_BR", label: qsTr("Portuguese (Brazil)") },
+                        { code: "ja", label: qsTr("Japanese") },
+                        { code: "zh_CN", label: qsTr("Simplified Chinese") }
+                    ]
+                    textRole: "label"
+                    currentIndex: Math.max(0, languageCodes.indexOf(languageManager.currentLanguage))
+                    onActivated: languageManager.currentLanguage = model[currentIndex].code
+                }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: window.borderColor }
+            RowLayout {
+                Layout.fillWidth: true
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Label { text: "Apparence"; color: window.textPrimary; font.pixelSize: 16; font.bold: true }
-                    Label { text: audioEngine.darkMode ? "Thème sombre" : "Thème clair"; color: window.textSecondary }
+                    Label { text: qsTr("Appearance"); color: window.textPrimary; font.pixelSize: 16; font.bold: true }
+                    Label { text: audioEngine.darkMode ? qsTr("Dark theme") : qsTr("Light theme"); color: window.textSecondary }
                 }
                 AppSwitch {
-                    text: "Mode sombre"
+                    text: qsTr("Dark mode")
                     checked: audioEngine.darkMode
                     onToggled: audioEngine.darkMode = checked
                 }
             }
-            AppButton { text: "Restaurer les raccourcis par défaut"; onClicked: audioEngine.resetShortcuts() }
+            AppButton { text: qsTr("Restore default shortcuts"); onClicked: audioEngine.resetShortcuts() }
         }
 
         footer: Item {
@@ -182,7 +204,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 anchors.margins: 10
                 Item { Layout.fillWidth: true }
-                AppButton { text: "Fermer"; highlighted: true; onClicked: settingsDialog.accept() }
+                AppButton { text: qsTr("Close"); highlighted: true; onClicked: settingsDialog.accept() }
             }
         }
     }
@@ -263,10 +285,10 @@ ApplicationWindow {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
-                Label { text: active ? "PISTE ACTIVE" : "PISTE " + letter; color: accent; font.pixelSize: 11; font.bold: true }
+                Label { text: active ? qsTr("ACTIVE TRACK") : qsTr("TRACK %1").arg(letter); color: accent; font.pixelSize: 11; font.bold: true }
                 Label {
                     Layout.fillWidth: true
-                    text: loaded ? fileName : "Aucun fichier chargé"
+                    text: loaded ? fileName : qsTr("No file loaded")
                     color: loaded ? window.textPrimary : window.textSecondary
                     elide: Text.ElideMiddle
                     font.pixelSize: 15
@@ -274,7 +296,7 @@ ApplicationWindow {
             }
             AppButton {
                 visible: allowFileSelection
-                text: loaded ? "Remplacer" : "Choisir"
+                text: loaded ? qsTr("Replace") : qsTr("Choose")
                 onClicked: chooseFile()
             }
         }
@@ -299,7 +321,7 @@ ApplicationWindow {
             anchors.margins: 14
             RowLayout {
                 Layout.fillWidth: true
-                Label { text: "Piste " + letter; color: accent; font.pixelSize: 17; font.bold: true }
+                Label { text: qsTr("Track %1").arg(letter); color: accent; font.pixelSize: 17; font.bold: true }
                 Item { Layout.fillWidth: true }
                 Label { text: net > 0 ? "+" + net : net; color: window.textPrimary; font.pixelSize: 26; font.bold: true }
             }
@@ -308,7 +330,7 @@ ApplicationWindow {
                 Label { text: "+ " + positive; color: window.positiveColor }
                 Label { text: "− " + negative; color: window.negativeColor }
                 Item { Layout.fillWidth: true }
-                Label { text: (positive + negative) === 0 ? "Moyenne —" : "Moyenne " + average.toFixed(2); color: window.textSecondary }
+                Label { text: (positive + negative) === 0 ? qsTr("Average —") : qsTr("Average %1").arg(average.toFixed(2)); color: window.textSecondary }
             }
         }
     }
@@ -386,7 +408,7 @@ ApplicationWindow {
                             }
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "Express"
+                                text: qsTr("Express")
                                 color: modeSelector.blindSelected ? window.textSecondary : "#08221c"
                                 font.pixelSize: 13
                                 font.bold: true
@@ -421,7 +443,7 @@ ApplicationWindow {
                             }
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: audioEngine.blindRevealed ? "Blind révélé" : "Blind Test"
+                                text: audioEngine.blindRevealed ? qsTr("Blind revealed") : qsTr("Blind Test")
                                 color: modeSelector.blindSelected ? "#11152b" : window.textSecondary
                                 font.pixelSize: 13
                                 font.bold: true
@@ -442,7 +464,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: 10
                     Item { Layout.fillWidth: true }
-                    AppButton { text: "⚙ Paramètres"; onClicked: settingsDialog.open() }
+                    AppButton { text: qsTr("⚙ Settings"); onClicked: settingsDialog.open() }
                 }
             }
         }
@@ -490,7 +512,7 @@ ApplicationWindow {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Label { text: "PASSAGE COMPARÉ"; color: window.textSecondary; font.pixelSize: 11; font.bold: true }
+                    Label { text: qsTr("COMPARED SECTION"); color: window.textSecondary; font.pixelSize: 11; font.bold: true }
                     Item { Layout.fillWidth: true }
                     Label { text: audioEngine.formatTime(audioEngine.selectionStart) + "  —  " + audioEngine.formatTime(audioEngine.selectionEnd); color: window.textPrimary; font.bold: true }
                 }
@@ -519,14 +541,14 @@ ApplicationWindow {
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
-            AppSwitch { text: "Boucle"; checked: audioEngine.loopEnabled; enabled: audioEngine.ready; onToggled: audioEngine.loopEnabled = checked }
-            AppSwitch { text: "Bip A/B"; checked: audioEngine.transitionBeepEnabled; enabled: audioEngine.ready; onToggled: audioEngine.transitionBeepEnabled = checked }
+            AppSwitch { text: qsTr("Loop"); checked: audioEngine.loopEnabled; enabled: audioEngine.ready; onToggled: audioEngine.loopEnabled = checked }
+            AppSwitch { text: qsTr("A/B beep"); checked: audioEngine.transitionBeepEnabled; enabled: audioEngine.ready; onToggled: audioEngine.transitionBeepEnabled = checked }
             RowLayout {
                 enabled: audioEngine.ready && audioEngine.transitionBeepEnabled
                 opacity: audioEngine.transitionBeepEnabled ? 1.0 : 0.0
                 spacing: 6
                 Behavior on opacity { NumberAnimation { duration: 120 } }
-                Label { text: "Volume"; color: window.textSecondary; font.pixelSize: 12 }
+                Label { text: qsTr("Volume"); color: window.textSecondary; font.pixelSize: 12 }
                 Slider {
                     Layout.preferredWidth: 120
                     from: 0
@@ -546,13 +568,13 @@ ApplicationWindow {
                 }
             }
             Item { Layout.fillWidth: true }
-            AppButton { text: "■ Arrêt"; enabled: audioEngine.ready; onClicked: audioEngine.stop() }
-            AppButton { text: "Ⅱ Pause"; enabled: audioEngine.playing; onClicked: audioEngine.pause() }
-            AppButton { text: "▶ Lecture"; enabled: audioEngine.ready && !audioEngine.playing; highlighted: true; onClicked: audioEngine.play() }
+            AppButton { text: qsTr("■ Stop"); enabled: audioEngine.ready; onClicked: audioEngine.stop() }
+            AppButton { text: qsTr("Ⅱ Pause"); enabled: audioEngine.playing; onClicked: audioEngine.pause() }
+            AppButton { text: qsTr("▶ Play"); enabled: audioEngine.ready && !audioEngine.playing; highlighted: true; onClicked: audioEngine.play() }
             AppButton {
-                text: audioEngine.blindRunning ? "Sélection aléatoire"
-                    : (audioEngine.blindRevealed ? "Session révélée"
-                    : (audioEngine.activeTrack === 0 ? "Écoute A" : "Écoute B"))
+                text: audioEngine.blindRunning ? qsTr("Random selection")
+                    : (audioEngine.blindRevealed ? qsTr("Session revealed")
+                    : (audioEngine.activeTrack === 0 ? qsTr("Listening to A") : qsTr("Listening to B")))
                 enabled: audioEngine.ready && !audioEngine.blindRevealed
                 onClicked: audioEngine.triggerTrackSelection()
             }
@@ -587,14 +609,14 @@ ApplicationWindow {
                 }
                 AppButton {
                     visible: !audioEngine.blindRevealed
-                    text: "Réinitialiser"
+                    text: qsTr("Reset")
                     enabled: audioEngine.hasVotes
                     onClicked: resetDialog.open()
                 }
                 AppButton {
                     visible: audioEngine.blindRevealed
                     Layout.alignment: Qt.AlignVCenter
-                    text: "Recommencer"
+                    text: qsTr("Restart")
                     highlighted: true
                     onClicked: audioEngine.restartBlindSession()
                 }
@@ -618,13 +640,13 @@ ApplicationWindow {
                     }
                     ColumnLayout {
                         Layout.fillWidth: true
-                        Label { text: "SESSION EN AVEUGLE"; color: window.textPrimary; font.pixelSize: 15; font.bold: true }
+                        Label { text: qsTr("BLIND SESSION"); color: window.textPrimary; font.pixelSize: 15; font.bold: true }
                         Label {
-                            text: audioEngine.blindVoteCount + " vote(s) enregistré(s) — la piste active reste masquée"
+                            text: qsTr("%1 vote(s) recorded — the active track remains hidden").arg(audioEngine.blindVoteCount)
                             color: window.textSecondary
                         }
                     }
-                    AppButton { text: "Révéler"; highlighted: true; onClicked: audioEngine.revealBlindSession() }
+                    AppButton { text: qsTr("Reveal"); highlighted: true; onClicked: audioEngine.revealBlindSession() }
                 }
             }
         }
@@ -637,7 +659,7 @@ ApplicationWindow {
             RowLayout {
                 anchors.centerIn: parent
                 spacing: 26
-                Label { text: audioEngine.switchShortcut + (audioEngine.blindRunning ? "  Choix aléatoire" : "  Basculer A/B"); color: window.textSecondary }
+                Label { text: audioEngine.switchShortcut + (audioEngine.blindRunning ? qsTr("  Random choice") : qsTr("  Switch A/B")); color: window.textSecondary }
                 Label { text: audioEngine.positiveShortcut + "  +1"; color: window.textSecondary }
                 Label { text: audioEngine.negativeShortcut + "  −1"; color: window.textSecondary }
                 Label { text: audioEngine.seekBackwardShortcut + "  −5 s"; color: window.textSecondary }
@@ -648,7 +670,7 @@ ApplicationWindow {
         Label {
             Layout.fillWidth: true
             Layout.preferredHeight: 12
-            text: "v" + Qt.application.version + "  •  © 2026 KarmaApps  •  Distribution gratuite  •  Sources sur GitHub  •  Qt 6"
+            text: qsTr("v%1  •  © 2026 KarmaApps  •  Free distribution  •  Source code on GitHub  •  Qt 6").arg(Qt.application.version)
             color: window.darkMode ? "#657083" : "#748195"
             font.pixelSize: 10
             horizontalAlignment: Text.AlignRight

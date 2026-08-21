@@ -24,15 +24,15 @@ Everything runs locally. No audio is uploaded, and the application has no accoun
 
 ## Download
 
-Version **0.2.1-beta.3** is available as a portable ZIP for **Windows 10 and Windows 11 x64** and as an AppImage for **Linux x86_64**. Download the binary and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
+Version **0.2.1-beta.4** is available as a portable ZIP for **Windows 10 and Windows 11 x64** and as an AppImage for **Linux x86_64**. Download the binary and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
 
 This beta is unsigned. Windows SmartScreen may display a warning because the executable has no Authenticode signature or established reputation. Verify the SHA-256 checksum, extract the complete ZIP, then run `ab-compare.exe` from the extracted folder.
 
 On Linux, make the AppImage executable and run it without installation:
 
 ```sh
-chmod +x AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
-./AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+chmod +x AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
+./AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
 ```
 
 ## Features
@@ -45,7 +45,7 @@ chmod +x AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
 - optional A/B transition beep with adjustable volume;
 - constrained random Blind Test sessions where the active track remains hidden;
 - separate vote tracking and A/B score reveal at the end of a Blind Test session;
-- configurable shortcuts and persistent light/dark theme;
+- configurable shortcuts, persistent light/dark theme and a seven-language interface: English, French, German, Spanish, Brazilian Portuguese, Japanese and Simplified Chinese;
 - no account, cloud upload or telemetry.
 
 ## Planned features
@@ -58,8 +58,7 @@ The roadmap currently includes, without a fixed schedule:
 - a spectrum analyser and loudness history;
 - manual track offset and automatic correlation-based alignment;
 - improved multichannel file support;
-- a possible macOS port after native building and validation;
-- a multilingual interface.
+- a possible macOS port after native building and validation.
 
 These priorities may evolve according to real-world use and feedback. All feedback is welcome, whether it concerns usability, Blind Test behaviour, shortcuts, audio compatibility or future features.
 
@@ -68,7 +67,7 @@ These priorities may evolve according to real-world use and feedback. All feedba
 Qt 6.9 or later, CMake 3.24 or later, Ninja and a C++20 compiler are required. On Arch Linux:
 
 ```fish
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-multimedia qt6-multimedia-ffmpeg qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-declarative qt6-multimedia qt6-multimedia-ffmpeg qt6-tools qt6-wayland
 cmake -S . -B build/linux-release -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build/linux-release --parallel (nproc)
 ctest --test-dir build/linux-release --output-on-failure
@@ -101,11 +100,12 @@ Les principales fonctions sont :
 - mode Blind Test pour écouter et voter sans savoir quelle piste est jouée ;
 - suivi des votes et révélation des pistes à la fin de la session ;
 - raccourcis clavier personnalisables ;
-- thèmes clair et sombre.
+- thèmes clair et sombre ;
+- interface disponible en français, anglais, allemand, espagnol, portugais brésilien, japonais et chinois simplifié, sélectionnable dans les paramètres.
 
 Tout fonctionne localement sur l’ordinateur : aucun fichier audio n’est envoyé sur un serveur et l’application ne contient ni compte utilisateur ni télémétrie. Les chemins des fichiers, les votes et les sessions d’écoute ne sont pas conservés après sa fermeture.
 
-La bêta **0.2.1-beta.3** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** et en AppImage pour **Linux x86_64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Vérifiez `SHA256SUMS` avant de lancer le binaire. Sous Windows, extrayez tout le ZIP puis lancez `ab-compare.exe` ; sous Linux, rendez l’AppImage exécutable avec `chmod +x`, puis lancez-la directement. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
+La bêta **0.2.1-beta.4** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** et en AppImage pour **Linux x86_64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Vérifiez `SHA256SUMS` avant de lancer le binaire. Sous Windows, extrayez tout le ZIP puis lancez `ab-compare.exe` ; sous Linux, rendez l’AppImage exécutable avec `chmod +x`, puis lancez-la directement. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
 
 Il s’agit encore d’une bêta : l’interface et le fonctionnement principal sont opérationnels, mais les essais sur différentes configurations audio restent particulièrement utiles.
 
@@ -119,8 +119,7 @@ La feuille de route prévoit notamment, sans calendrier ferme :
 - un analyseur spectral et un historique de la loudness ;
 - un décalage manuel des pistes et un alignement automatique par corrélation ;
 - une meilleure prise en charge des fichiers multicanaux ;
-- un éventuel portage macOS après compilation et validation natives ;
-- une interface multilingue.
+- un éventuel portage macOS après compilation et validation natives.
 
 Ces priorités pourront évoluer en fonction des usages et des retours.
 

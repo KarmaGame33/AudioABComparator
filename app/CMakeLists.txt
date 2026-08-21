@@ -12,6 +12,8 @@ target_link_libraries(abcompare_core PUBLIC Qt6::Core Qt6::Multimedia)
 
 qt_add_executable(ab-compare
     src/main.cpp
+    src/LanguageManager.cpp
+    src/LanguageManager.h
 )
 
 set(app_icon_png resources/audio-ab-comparator.png)
@@ -48,6 +50,17 @@ target_link_libraries(ab-compare PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
+)
+
+qt_add_translations(ab-compare
+    TS_FILES
+        translations/ab_compare_de.ts
+        translations/ab_compare_es.ts
+        translations/ab_compare_fr.ts
+        translations/ab_compare_ja.ts
+        translations/ab_compare_pt_BR.ts
+        translations/ab_compare_zh_CN.ts
+    RESOURCE_PREFIX "/i18n"
 )
 
 set_target_properties(ab-compare PROPERTIES

@@ -172,7 +172,7 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: 7
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Vous pouvez déplacer les curseurs de début et fin de lecture"
+            text: qsTr("You can move the playback start and end handles")
             color: root.darkMode ? "#b8c2d0" : "#526173"
             font.pixelSize: 11
         }
@@ -204,7 +204,7 @@ Item {
             anchors.leftMargin: 10
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 6
-            text: "Début  " + root.formatTime(root.selectionStart)
+            text: qsTr("Start  %1").arg(root.formatTime(root.selectionStart))
             color: root.darkMode ? "#baf4d8" : "#176246"
             font.pixelSize: 11
             font.bold: true
@@ -215,7 +215,7 @@ Item {
             anchors.rightMargin: 10
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 6
-            text: "Fin  " + root.formatTime(root.selectionEnd)
+            text: qsTr("End  %1").arg(root.formatTime(root.selectionEnd))
             color: root.darkMode ? "#ffe0b5" : "#8a531a"
             font.pixelSize: 11
             font.bold: true
@@ -237,7 +237,7 @@ Item {
 
         Label {
             anchors.centerIn: parent
-            text: "D"
+            text: qsTr("S")
             color: "#0b2a20"
             font.pixelSize: 12
             font.bold: true
@@ -262,7 +262,7 @@ Item {
 
         Label {
             anchors.centerIn: parent
-            text: "F"
+            text: qsTr("E")
             color: "#3a230b"
             font.pixelSize: 12
             font.bold: true

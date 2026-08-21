@@ -2,6 +2,16 @@
 
 All notable changes to Audio A/B Comparator are documented in this file. The project follows Semantic Versioning; prerelease labels identify public beta builds.
 
+## [Unreleased]
+
+## [0.2.1-beta.4] - 2026-08-21
+
+### Added
+
+- built-in English and French interfaces with initial system-language detection;
+- a persistent language selector in Settings, with immediate interface and audio-status retranslation;
+- German, Spanish, Brazilian Portuguese, Japanese and Simplified Chinese interfaces, including automatic system-language detection.
+
 ## [0.2.1-beta.3] - 2026-08-21
 
 ### Added
@@ -69,6 +79,8 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 - playback start, stop and resume behaviour.
 
+[Unreleased]: https://github.com/KarmaGame33/AudioABComparator/compare/v0.2.1-beta.4...HEAD
+[0.2.1-beta.4]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.4
 [0.2.1-beta.3]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.3
 [0.2.1-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.2
 [0.2.1-beta.1]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.1

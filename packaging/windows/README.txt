@@ -1,4 +1,4 @@
-Audio A/B Comparator 0.2.1-beta.3
+Audio A/B Comparator 0.2.1-beta.4
 KarmaApps by KarmaGame
 
 PORTABLE WINDOWS BETA

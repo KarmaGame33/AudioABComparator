@@ -128,17 +128,17 @@ La construction vérifie aussi que l’intégration cliente Qt Wayland-EGL est r
 Les fichiers produits sont :
 
 ```text
-dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
 dist/release/SHA256SUMS-linux
 ```
 
 Validation locale :
 
 ```fish
-chmod +x dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
-./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage --smoke-test
-./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
-env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.2.1-beta.3-linux-x86_64.AppImage
+chmod +x dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
+./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage --smoke-test
+./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
+env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
 ```
 
 Les deux derniers lancements doivent afficher et maintenir la fenêtre, respectivement sous Wayland natif et XWayland/XCB. Ils sont indispensables : le smoke test seul se termine avant l’initialisation du rendu de la première trame.
@@ -273,7 +273,7 @@ Après un build et des tests réussis :
 Get-Content '.\dist\release\SHA256SUMS'
 ```
 
-Le script crée `AudioABComparator-0.2.1-beta.3-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md` et les textes LGPL. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
+Le script crée `AudioABComparator-0.2.1-beta.4-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md` et les textes LGPL. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
 
 ## 5. macOS — procédure préparée mais non validée
 

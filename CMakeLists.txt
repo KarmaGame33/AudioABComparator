@@ -7,13 +7,13 @@ project(
     LANGUAGES CXX
 )
 
-set(AB_COMPARE_RELEASE_VERSION "0.2.1-beta.3")
+set(AB_COMPARE_RELEASE_VERSION "0.2.1-beta.4")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Multimedia Test)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Core Gui LinguistTools Qml Quick QuickControls2 Multimedia Test)
 qt_standard_project_setup(REQUIRES 6.9)
 
 include(CTest)

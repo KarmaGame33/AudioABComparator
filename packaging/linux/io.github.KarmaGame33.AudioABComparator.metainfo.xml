@@ -29,13 +29,13 @@
   <url type="bugtracker">https://github.com/KarmaGame33/AudioABComparator/issues</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/KarmaGame33/AudioABComparator/v0.2.1-beta.3/docs/media/audio-ab-comparator.png</image>
+      <image>https://raw.githubusercontent.com/KarmaGame33/AudioABComparator/main/docs/media/audio-ab-comparator.png</image>
       <caption>Express comparison with a shared timeline</caption>
       <caption xml:lang="fr">Comparaison Express avec une timeline commune</caption>
     </screenshot>
   </screenshots>
   <releases>
-    <release version="0.2.1-beta.3" date="2026-08-21" type="development"/>
+    <release version="0.2.1-beta.4" date="2026-08-21" type="development"/>
   </releases>
   <content_rating type="oars-1.1"/>
 </component>

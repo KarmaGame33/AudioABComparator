@@ -47,6 +47,12 @@ bool writeTone(const QString &path, double frequency)
     }
     return stream.status() == QDataStream::Ok;
 }
+
+bool mentionsTrackIdentity(const QString &message)
+{
+    return message.contains(QStringLiteral("track"), Qt::CaseInsensitive)
+        || message.contains(QStringLiteral("piste"), Qt::CaseInsensitive);
+}
 }
 
 class AudioEngineTest final : public QObject
@@ -280,7 +286,7 @@ void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
     engine.startBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRunning);
     QCOMPARE(engine.blindVoteCount(), 0);
-    QVERIFY(!engine.statusMessage().contains(QStringLiteral("piste"), Qt::CaseInsensitive));
+    QVERIFY(!mentionsTrackIdentity(engine.statusMessage()));
 
     int previous = engine.activeTrack();
     int consecutive = 1;
@@ -290,20 +296,20 @@ void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
         consecutive = current == previous ? consecutive + 1 : 1;
         QVERIFY(consecutive <= 2);
         previous = current;
-        QVERIFY(!engine.statusMessage().contains(QStringLiteral("piste"), Qt::CaseInsensitive));
+        QVERIFY(!mentionsTrackIdentity(engine.statusMessage()));
     }
 
     engine.votePositive();
     QCOMPARE(engine.blindVoteCount(), 1);
     QCOMPARE(engine.netA(), expressNetA);
     QCOMPARE(engine.netB(), expressNetB);
-    QVERIFY(!engine.statusMessage().contains(QStringLiteral("piste"), Qt::CaseInsensitive));
+    QVERIFY(!mentionsTrackIdentity(engine.statusMessage()));
 
     const double positionBeforeReveal = engine.position();
     engine.revealBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRevealed);
     QCOMPARE(engine.position(), positionBeforeReveal);
-    QVERIFY(engine.statusMessage().contains(QStringLiteral("piste"), Qt::CaseInsensitive));
+    QVERIFY(mentionsTrackIdentity(engine.statusMessage()));
     engine.returnToExpress();
     QCOMPARE(engine.listeningMode(), AudioEngine::Express);
     QCOMPARE(engine.netA(), expressNetA);

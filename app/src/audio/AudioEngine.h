@@ -8,6 +8,7 @@
 #include <QAudioSink>
 #include <QObject>
 #include <QSettings>
+#include <QStringList>
 #include <QTimer>
 #include <QUrl>
 #include <QVariantList>
@@ -145,6 +146,7 @@ public:
     Q_INVOKABLE void voteNegative();
     Q_INVOKABLE void resetVotes();
     Q_INVOKABLE void resetShortcuts();
+    Q_INVOKABLE void retranslate();
     Q_INVOKABLE QString formatTime(double seconds) const;
 
     [[nodiscard]] static int constrainedBlindTrack(int candidate, int previousTrack, int consecutiveCount);
@@ -196,7 +198,7 @@ private:
     void reportAudioError(QtAudio::Error error);
     void updatePosition();
     void seekBy(double seconds);
-    void seekToPosition(double seconds, const QString &statusMessage);
+    void seekToPosition(double seconds, const char *statusSource);
     void selectBlindTrack(bool selectionCommand);
     void vote(int delta);
     void resetBlindState(bool returnToExpress);
@@ -205,6 +207,10 @@ private:
     [[nodiscard]] qint64 secondsToFrames(double seconds) const;
     [[nodiscard]] double framesToSeconds(qint64 frames) const;
     void saveShortcut(const QString &key, const QString &value);
+    void setStatusMessage(const char *source, const QStringList &arguments = {});
+    void setErrorMessage(const char *source, const QStringList &arguments = {});
+    void clearErrorMessage();
+    [[nodiscard]] QString translatedMessage(const QByteArray &source, const QStringList &arguments) const;
 
     QAudioFormat m_format;
     QAudioDecoder m_decoderA;
@@ -217,7 +223,11 @@ private:
     QVariantList m_waveformB;
     QString m_trackAName;
     QString m_trackBName;
-    QString m_statusMessage = QStringLiteral("Chargez deux fichiers audio pour commencer");
+    QByteArray m_statusSource;
+    QStringList m_statusArguments;
+    QByteArray m_errorSource;
+    QStringList m_errorArguments;
+    QString m_statusMessage;
     QString m_errorMessage;
     bool m_loadedA = false;
     bool m_loadedB = false;
