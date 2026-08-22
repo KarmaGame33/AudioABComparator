@@ -4,6 +4,52 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 ## [Unreleased]
 
+## [0.3.0-beta.3] - 2026-08-22
+
+### Added
+
+- paired live Sample Peak, True Peak and RMS meters for A and B at the same playback position;
+- per-track minimum and maximum markers retained from playback start until Stop or a selection change;
+- EBU R 128 momentary (LUFS-M, 400 ms) and short-term (LUFS-S, 3 s) loudness, updated during playback and frozen on pause;
+- serialized background live-analysis requests that never perform analysis or take a lock in the audio callback.
+
+### Changed
+
+- the Analysis dashboard now places the A/B mastering table and live meters side by side in two stable columns;
+- all 150 interface strings are complete in each of the six translated catalogs, in addition to the English source.
+
+## [0.3.0-beta.2] - 2026-08-22
+
+### Changed
+
+- Linux builds now prefer the desktop portal for the system file chooser while retaining Qt Quick Dialogs as a fallback when no session portal is available;
+- the Analysis scope selector now uses an unambiguous active color and the shorter `All | Selection` labels;
+- selection handles preview their range during dragging and trigger analysis only when released.
+
+### Fixed
+
+- the Analysis scroll view no longer steals selection-handle drags after a few pixels;
+- the playback-time badge now sits in a dedicated lane above the playhead instead of covering the waveform.
+
+## [0.3.0-beta.1] - 2026-08-21
+
+### Added
+
+- a third `Analysis` dashboard for whole-file and shared-selection mastering measurements: Sample Peak, True Peak, integrated loudness, Loudness Range, RMS, crest factor and DC offset;
+- native PCM retention and background analysis for both audible and non-audible tracks, with debounced selection recalculation and stale-result rejection;
+- statically linked libebur128 1.2.6 under the MIT license;
+- source and playback format summaries for each track, including explicit sample-rate, channel and PCM sample-format conversions;
+- synthetic coverage for silence, tones, DC offset, level changes, UInt8/Int16/Int32/Float, mono/stereo and playback-format decisions.
+
+### Changed
+
+- decoding now preserves each source PCM format first; identical supported formats are sent to Qt natively, otherwise both tracks are converted to the default device's preferred format;
+- the top mode selector is now `Express | Blind Test | Analysis`; Analysis preserves transport, selection and votes and is blocked until the current Blind Test is exited.
+
+### Documentation
+
+- documented native-playback semantics, analysis limits, libebur128 integration and build requirements.
+
 ## [0.2.1-beta.4] - 2026-08-21
 
 ### Added
@@ -79,7 +125,10 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 - playback start, stop and resume behaviour.
 
-[Unreleased]: https://github.com/KarmaGame33/AudioABComparator/compare/v0.2.1-beta.4...HEAD
+[Unreleased]: https://github.com/KarmaGame33/AudioABComparator/compare/v0.3.0-beta.3...HEAD
+[0.3.0-beta.3]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.3
+[0.3.0-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.2
+[0.3.0-beta.1]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.1
 [0.2.1-beta.4]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.4
 [0.2.1-beta.3]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.3
 [0.2.1-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.2.1-beta.2

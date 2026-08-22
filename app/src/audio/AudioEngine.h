@@ -1,5 +1,7 @@
 #pragma once
 
+#include "analysis/AnalysisController.h"
+#include "analysis/LiveAnalysis.h"
 #include "audio/PcmIODevice.h"
 
 #include <QAudioBuffer>
@@ -21,6 +23,14 @@ class AudioEngine final : public QObject
 
     Q_PROPERTY(QString trackAName READ trackAName NOTIFY tracksChanged)
     Q_PROPERTY(QString trackBName READ trackBName NOTIFY tracksChanged)
+    Q_PROPERTY(QString trackASourceSummary READ trackASourceSummary NOTIFY tracksChanged)
+    Q_PROPERTY(QString trackBSourceSummary READ trackBSourceSummary NOTIFY tracksChanged)
+    Q_PROPERTY(QString trackAPlaybackSummary READ trackAPlaybackSummary NOTIFY tracksChanged)
+    Q_PROPERTY(QString trackBPlaybackSummary READ trackBPlaybackSummary NOTIFY tracksChanged)
+    Q_PROPERTY(bool trackANativePlayback READ trackANativePlayback NOTIFY tracksChanged)
+    Q_PROPERTY(bool trackBNativePlayback READ trackBNativePlayback NOTIFY tracksChanged)
+    Q_PROPERTY(AnalysisController *analysis READ analysis CONSTANT)
+    Q_PROPERTY(LiveAnalysisController *liveAnalysis READ liveAnalysis CONSTANT)
     Q_PROPERTY(bool loadedA READ loadedA NOTIFY tracksChanged)
     Q_PROPERTY(bool loadedB READ loadedB NOTIFY tracksChanged)
     Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
@@ -80,6 +90,14 @@ public:
 
     [[nodiscard]] QString trackAName() const;
     [[nodiscard]] QString trackBName() const;
+    [[nodiscard]] QString trackASourceSummary() const;
+    [[nodiscard]] QString trackBSourceSummary() const;
+    [[nodiscard]] QString trackAPlaybackSummary() const;
+    [[nodiscard]] QString trackBPlaybackSummary() const;
+    [[nodiscard]] bool trackANativePlayback() const;
+    [[nodiscard]] bool trackBNativePlayback() const;
+    [[nodiscard]] AnalysisController *analysis();
+    [[nodiscard]] LiveAnalysisController *liveAnalysis();
     [[nodiscard]] bool loadedA() const;
     [[nodiscard]] bool loadedB() const;
     [[nodiscard]] bool ready() const;
@@ -148,6 +166,7 @@ public:
     Q_INVOKABLE void resetShortcuts();
     Q_INVOKABLE void retranslate();
     Q_INVOKABLE QString formatTime(double seconds) const;
+    Q_INVOKABLE bool canOpenAnalysis() const;
 
     [[nodiscard]] static int constrainedBlindTrack(int candidate, int previousTrack, int consecutiveCount);
     [[nodiscard]] static bool shouldTriggerTransitionBeep(bool enabled, bool playing, bool selectionCommand);
@@ -197,13 +216,18 @@ private:
     void handleAudioStateChanged(QtAudio::State state);
     void reportAudioError(QtAudio::Error error);
     void updatePosition();
+    void updateLiveAnalysis();
+    void resetAndUpdateLiveAnalysis();
     void seekBy(double seconds);
     void seekToPosition(double seconds, const char *statusSource);
     void selectBlindTrack(bool selectionCommand);
     void vote(int delta);
     void resetBlindState(bool returnToExpress);
-    [[nodiscard]] QVariantList buildWaveform(const QByteArray &pcm) const;
-    [[nodiscard]] float amplitudeAt(const QByteArray &pcm, qint64 frame, int channel) const;
+    [[nodiscard]] QVariantList buildWaveform(const QByteArray &pcm, const QAudioFormat &format) const;
+    [[nodiscard]] QString sourceSummary(Track track) const;
+    [[nodiscard]] QString playbackSummary(Track track) const;
+    [[nodiscard]] static QString formatSummary(const QAudioFormat &format);
+    [[nodiscard]] static QString channelSummary(const QAudioFormat &format);
     [[nodiscard]] qint64 secondsToFrames(double seconds) const;
     [[nodiscard]] double framesToSeconds(qint64 frames) const;
     void saveShortcut(const QString &key, const QString &value);
@@ -213,16 +237,26 @@ private:
     [[nodiscard]] QString translatedMessage(const QByteArray &source, const QStringList &arguments) const;
 
     QAudioFormat m_format;
+    QAudioFormat m_nativeFormatA;
+    QAudioFormat m_nativeFormatB;
     QAudioDecoder m_decoderA;
     QAudioDecoder m_decoderB;
     std::unique_ptr<QAudioSink> m_audioSink;
     PcmIODevice m_pcmDevice;
     QByteArray m_pcmA;
     QByteArray m_pcmB;
+    QByteArray m_nativePcmA;
+    QByteArray m_nativePcmB;
     QVariantList m_waveformA;
     QVariantList m_waveformB;
     QString m_trackAName;
     QString m_trackBName;
+    QString m_trackAPath;
+    QString m_trackBPath;
+    bool m_nativePlaybackA = false;
+    bool m_nativePlaybackB = false;
+    AnalysisController m_analysis;
+    LiveAnalysisController m_liveAnalysis;
     QByteArray m_statusSource;
     QStringList m_statusArguments;
     QByteArray m_errorSource;
@@ -261,5 +295,6 @@ private:
     QString m_seekBackwardShortcut;
     QString m_seekForwardShortcut;
     QTimer m_positionTimer;
+    QTimer m_liveAnalysisTimer;
     QSettings m_settings;
 };

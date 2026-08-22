@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$releaseVersion = '0.2.1-beta.4'
+$releaseVersion = '0.3.0-beta.3'
 $packageName = "AudioABComparator-$releaseVersion-windows-x86_64"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $buildPath = (Resolve-Path (Join-Path $repositoryRoot $BuildDirectory)).Path
@@ -61,6 +61,24 @@ Copy-Item -LiteralPath (Join-Path $repositoryRoot 'packaging\windows\README.txt'
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination (Join-Path $packagePath 'LICENSE')
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'THIRD_PARTY_NOTICES.md') -Destination (Join-Path $packagePath 'THIRD_PARTY_NOTICES.md')
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'licenses') -Destination (Join-Path $packagePath 'licenses') -Recurse
+
+$packagedExecutable = Join-Path $packagePath 'ab-compare.exe'
+foreach ($language in @('en', 'fr', 'de', 'es', 'pt_BR', 'ja', 'zh_CN')) {
+    $smokeStdout = Join-Path $outputPath "smoke-$language.stdout.txt"
+    $smokeStderr = Join-Path $outputPath "smoke-$language.stderr.txt"
+    $smokeProcess = Start-Process -FilePath $packagedExecutable `
+        -ArgumentList @('--smoke-test', "--language=$language") -Wait -PassThru `
+        -RedirectStandardOutput $smokeStdout -RedirectStandardError $smokeStderr
+    $smokeOutput = (Get-Content -LiteralPath $smokeStdout -Raw -ErrorAction SilentlyContinue) +
+        (Get-Content -LiteralPath $smokeStderr -Raw -ErrorAction SilentlyContinue)
+    if ($smokeProcess.ExitCode -ne 0 -or
+        $smokeOutput -notmatch 'SMOKE_VERSION=0\.3\.0-beta\.3' -or
+        $smokeOutput -notmatch "SMOKE_LANGUAGE=$language") {
+        throw "Packaged smoke test failed for $language with exit code $($smokeProcess.ExitCode):`n$smokeOutput"
+    }
+    Write-Host "Packaged smoke test $language`: OK"
+    Remove-Item -LiteralPath $smokeStdout, $smokeStderr -Force -ErrorAction SilentlyContinue
+}
 
 Compress-Archive -LiteralPath $packagePath -DestinationPath $zipPath -CompressionLevel Optimal
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipPath).Hash.ToLowerInvariant()

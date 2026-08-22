@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.2.1-beta.4-windows-x86_64\ab-compare.exe'
+$executable = Join-Path $repositoryRoot 'dist\release\AudioABComparator-0.3.0-beta.3-windows-x86_64\ab-compare.exe'
 $fixtures = 'C:\Dev\audioab-format-fixtures'
 $outputDirectory = Join-Path $repositoryRoot 'dist\media'
 

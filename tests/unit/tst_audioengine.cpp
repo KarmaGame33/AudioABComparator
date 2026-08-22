@@ -1,5 +1,10 @@
+#include "analysis/AnalysisController.h"
+#include "analysis/AnalysisMetrics.h"
+#include "analysis/LiveAnalysis.h"
 #include "audio/AudioEngine.h"
+#include "audio/PcmConversion.h"
 #include "audio/PcmIODevice.h"
+#include "platform/PlatformThemeSelector.h"
 
 #include <QDataStream>
 #include <QFile>
@@ -13,15 +18,54 @@
 #include <cstring>
 
 namespace {
-bool writeTone(const QString &path, double frequency)
+QAudioFormat pcmFormat(int sampleRate, int channels, QAudioFormat::SampleFormat sampleFormat)
 {
-    constexpr quint32 sampleRate = 48'000;
-    constexpr quint16 channelCount = 2;
+    QAudioFormat format;
+    format.setSampleRate(sampleRate);
+    if (channels == 1) {
+        format.setChannelConfig(QAudioFormat::ChannelConfigMono);
+    } else if (channels == 2) {
+        format.setChannelConfig(QAudioFormat::ChannelConfigStereo);
+    } else {
+        format.setChannelCount(channels);
+    }
+    format.setSampleFormat(sampleFormat);
+    return format;
+}
+
+QByteArray makeTonePcm(
+    QAudioFormat::SampleFormat sampleFormat,
+    int channels,
+    double amplitude,
+    double dcOffset = 0.0,
+    double seconds = 5.0,
+    bool changingLevel = false)
+{
+    const QAudioFormat floatFormat = pcmFormat(48'000, channels, QAudioFormat::Float);
+    const qint64 frameCount = qRound64(seconds * floatFormat.sampleRate());
+    QByteArray floating(frameCount * floatFormat.bytesPerFrame(), Qt::Uninitialized);
+    constexpr double tau = 6.28318530717958647692;
+    for (qint64 frame = 0; frame < frameCount; ++frame) {
+        const double envelope = changingLevel && frame >= frameCount / 2 ? 1.0 : (changingLevel ? 0.125 : 1.0);
+        const float sample = static_cast<float>(dcOffset + amplitude * envelope
+            * std::sin(tau * 997.0 * static_cast<double>(frame) / floatFormat.sampleRate()));
+        for (int channel = 0; channel < channels; ++channel) {
+            std::memcpy(floating.data() + frame * floatFormat.bytesPerFrame()
+                    + channel * floatFormat.bytesPerSample(),
+                &sample, sizeof(sample));
+        }
+    }
+    return PcmConversion::convert(floating, floatFormat, pcmFormat(48'000, channels, sampleFormat));
+}
+
+bool writeTone(const QString &path, double frequency, quint32 sampleRate = 48'000,
+    quint16 channelCount = 2, double amplitude = 8'000.0)
+{
     constexpr quint16 bitsPerSample = 16;
     constexpr quint32 durationSeconds = 8;
-    constexpr quint32 frameCount = sampleRate * durationSeconds;
-    constexpr quint32 bytesPerFrame = channelCount * (bitsPerSample / 8);
-    constexpr quint32 dataSize = frameCount * bytesPerFrame;
+    const quint32 frameCount = sampleRate * durationSeconds;
+    const quint32 bytesPerFrame = channelCount * (bitsPerSample / 8);
+    const quint32 dataSize = frameCount * bytesPerFrame;
 
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -42,8 +86,10 @@ bool writeTone(const QString &path, double frequency)
     constexpr double tau = 6.28318530717958647692;
     for (quint32 frame = 0; frame < frameCount; ++frame) {
         const double phase = tau * frequency * static_cast<double>(frame) / sampleRate;
-        const qint16 sample = static_cast<qint16>(std::sin(phase) * 8'000.0);
-        stream << sample << sample;
+        const qint16 sample = static_cast<qint16>(std::sin(phase) * amplitude);
+        for (quint16 channel = 0; channel < channelCount; ++channel) {
+            stream << sample;
+        }
     }
     return stream.status() == QDataStream::Ok;
 }
@@ -69,6 +115,22 @@ private slots:
     void transitionBeepVolumeIsClampedAndPersisted();
     void pcmDeviceReportsAvailableAudio();
     void pcmDeviceMixesAndCancelsTransitionBeep();
+    void playbackFormatDecisionIsDeterministic();
+    void platformThemeDecisionKeepsPortableFallback();
+    void convertsSupportedPcmFormats();
+    void analyzesSilenceAndDcOffset();
+    void analyzesToneFormats_data();
+    void analyzesToneFormats();
+    void loudnessRangeDetectsLevelChange();
+    void analyzesLiveToneWindows_data();
+    void analyzesLiveToneWindows();
+    void liveShortTermWaitsForThreeSeconds();
+    void clearedLiveAnalysisIgnoresRunningResult();
+    void pairedLiveAnalysisTracksExtrema();
+    void multichannelAnalysisIsExplicitlyUnsupported();
+    void staleSelectionAnalysisIsIgnored();
+    void selectionUsesEachNativeSampleRate();
+    void convertsMismatchedTracksForPlayback();
     void decodesPairAndEnforcesFiveSecondSelection();
     void playbackAdvancesWithDefaultOutput();
     void validatesExternalReleaseFormats();
@@ -83,6 +145,23 @@ void AudioEngineTest::defaultShortcutsAreDistinct()
     QCOMPARE(engine.negativeShortcut(), QStringLiteral("Down"));
     QCOMPARE(engine.seekBackwardShortcut(), QStringLiteral("Left"));
     QCOMPARE(engine.seekForwardShortcut(), QStringLiteral("Right"));
+}
+
+void AudioEngineTest::platformThemeDecisionKeepsPortableFallback()
+{
+    using Capabilities = PlatformThemeSelector::Capabilities;
+    using Decision = PlatformThemeSelector::Decision;
+
+    QCOMPARE(PlatformThemeSelector::decide(Capabilities {true, true, true, true}),
+        Decision::PreserveUserChoice);
+    QCOMPARE(PlatformThemeSelector::decide(Capabilities {false, true, true, true}),
+        Decision::PreferDesktopPortal);
+    QCOMPARE(PlatformThemeSelector::decide(Capabilities {false, false, true, true}),
+        Decision::UseQtFallback);
+    QCOMPARE(PlatformThemeSelector::decide(Capabilities {false, true, false, true}),
+        Decision::UseQtFallback);
+    QCOMPARE(PlatformThemeSelector::decide(Capabilities {false, true, true, false}),
+        Decision::UseQtFallback);
 }
 
 void AudioEngineTest::duplicateShortcutIsRejected()
@@ -234,6 +313,290 @@ void AudioEngineTest::pcmDeviceMixesAndCancelsTransitionBeep()
     QVERIFY(std::all_of(cancelledOutput.cbegin(), cancelledOutput.cend(), [](char value) { return value == 0; }));
 }
 
+void AudioEngineTest::playbackFormatDecisionIsDeterministic()
+{
+    const QAudioFormat native = pcmFormat(44'100, 2, QAudioFormat::Int16);
+    const QAudioFormat preferred = pcmFormat(48'000, 2, QAudioFormat::Float);
+
+    auto decision = PcmConversion::choosePlaybackFormat(native, native, preferred, true);
+    QVERIFY(decision.native);
+    QVERIFY(PcmConversion::formatsMatch(decision.format, native));
+
+    decision = PcmConversion::choosePlaybackFormat(native, native, preferred, false);
+    QVERIFY(!decision.native);
+    QVERIFY(PcmConversion::formatsMatch(decision.format, preferred));
+
+    decision = PcmConversion::choosePlaybackFormat(native, pcmFormat(48'000, 2, QAudioFormat::Int16), preferred, true);
+    QVERIFY(!decision.native);
+    decision = PcmConversion::choosePlaybackFormat(native, pcmFormat(44'100, 1, QAudioFormat::Int16), preferred, true);
+    QVERIFY(!decision.native);
+    decision = PcmConversion::choosePlaybackFormat(native, pcmFormat(44'100, 2, QAudioFormat::Float), preferred, true);
+    QVERIFY(!decision.native);
+}
+
+void AudioEngineTest::convertsSupportedPcmFormats()
+{
+    const QAudioFormat floating = pcmFormat(48'000, 1, QAudioFormat::Float);
+    const QByteArray source = makeTonePcm(QAudioFormat::Float, 1, 0.5, 0.0, 0.1);
+    for (const auto sampleFormat : {QAudioFormat::UInt8, QAudioFormat::Int16, QAudioFormat::Int32, QAudioFormat::Float}) {
+        const QAudioFormat target = pcmFormat(44'100, 2, sampleFormat);
+        const QByteArray converted = PcmConversion::convert(source, floating, target);
+        QVERIFY(!converted.isEmpty());
+        const qint64 expectedFrames = qRound64((source.size() / floating.bytesPerFrame()) * 44'100.0 / 48'000.0);
+        QCOMPARE(converted.size(), expectedFrames * target.bytesPerFrame());
+        QVERIFY(std::abs(PcmConversion::sampleAt(converted, target, 11, 0)
+            - PcmConversion::sampleAt(converted, target, 11, 1)) < 0.02);
+    }
+}
+
+void AudioEngineTest::analyzesSilenceAndDcOffset()
+{
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const QByteArray silence(5 * format.sampleRate() * format.bytesPerFrame(), '\0');
+    const AnalysisMetrics silent = AnalysisComputer::analyze(silence, format);
+    QVERIFY(silent.valid);
+    QVERIFY(std::isinf(silent.samplePeak) && silent.samplePeak < 0.0);
+    QVERIFY(std::isinf(silent.truePeak) && silent.truePeak < 0.0);
+    QVERIFY(std::isinf(silent.integratedLoudness) && silent.integratedLoudness < 0.0);
+    QVERIFY(std::isinf(silent.rms) && silent.rms < 0.0);
+    QVERIFY(std::isnan(silent.crestFactor));
+    QVERIFY(std::isnan(silent.loudnessRange));
+    QCOMPARE(silent.dcOffset, 0.0);
+
+    QByteArray dc(5 * format.sampleRate() * format.bytesPerFrame(), Qt::Uninitialized);
+    const float left = -0.05F;
+    const float right = 0.10F;
+    for (qint64 frame = 0; frame < 5 * format.sampleRate(); ++frame) {
+        std::memcpy(dc.data() + frame * format.bytesPerFrame(), &left, sizeof(left));
+        std::memcpy(dc.data() + frame * format.bytesPerFrame() + sizeof(left), &right, sizeof(right));
+    }
+    const AnalysisMetrics offset = AnalysisComputer::analyze(dc, format);
+    QVERIFY(offset.valid);
+    QVERIFY(std::abs(offset.dcOffset - 10.0) < 0.001);
+    QVERIFY(std::abs(offset.samplePeak + 20.0) < 0.01);
+}
+
+void AudioEngineTest::analyzesToneFormats_data()
+{
+    QTest::addColumn<int>("sampleFormat");
+    QTest::addColumn<int>("channels");
+    for (const auto sampleFormat : {QAudioFormat::UInt8, QAudioFormat::Int16, QAudioFormat::Int32, QAudioFormat::Float}) {
+        for (int channels : {1, 2}) {
+            const QString name = QStringLiteral("%1-%2ch")
+                .arg(PcmConversion::sampleFormatName(sampleFormat)).arg(channels);
+            QTest::newRow(qPrintable(name)) << static_cast<int>(sampleFormat) << channels;
+        }
+    }
+}
+
+void AudioEngineTest::analyzesToneFormats()
+{
+    QFETCH(int, sampleFormat);
+    QFETCH(int, channels);
+    const auto formatType = static_cast<QAudioFormat::SampleFormat>(sampleFormat);
+    const QAudioFormat format = pcmFormat(48'000, channels, formatType);
+    const AnalysisMetrics metrics = AnalysisComputer::analyze(makeTonePcm(formatType, channels, 0.5), format);
+    QVERIFY2(metrics.valid, qPrintable(metrics.error));
+    QVERIFY(std::abs(metrics.samplePeak + 6.0206) < (formatType == QAudioFormat::UInt8 ? 0.3 : 0.03));
+    QVERIFY(std::abs(metrics.rms + 9.0309) < (formatType == QAudioFormat::UInt8 ? 0.3 : 0.03));
+    QVERIFY(std::abs(metrics.crestFactor - 3.0103) < 0.08);
+    QVERIFY(std::abs(metrics.truePeak + 6.0206) < 0.25);
+    const double expectedLufs = channels == 1 ? -9.07 : -6.06;
+    QVERIFY(std::abs(metrics.integratedLoudness - expectedLufs) < (formatType == QAudioFormat::UInt8 ? 0.35 : 0.15));
+    QVERIFY(std::isfinite(metrics.loudnessRange));
+
+    if (formatType == QAudioFormat::Float && channels == 1) {
+        const AnalysisMetrics fullScale = AnalysisComputer::analyze(makeTonePcm(formatType, channels, 1.0), format);
+        QVERIFY(fullScale.valid);
+        QVERIFY(std::abs(fullScale.samplePeak) < 0.01);
+        QVERIFY(std::abs(fullScale.rms + 3.0103) < 0.03);
+    }
+}
+
+void AudioEngineTest::loudnessRangeDetectsLevelChange()
+{
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const AnalysisMetrics metrics = AnalysisComputer::analyze(
+        makeTonePcm(QAudioFormat::Float, 2, 0.7, 0.0, 12.0, true), format);
+    QVERIFY(metrics.valid);
+    QVERIFY2(metrics.loudnessRange > 5.0, qPrintable(QString::number(metrics.loudnessRange)));
+}
+
+void AudioEngineTest::analyzesLiveToneWindows_data()
+{
+    QTest::addColumn<int>("sampleFormat");
+    QTest::addColumn<int>("channels");
+    for (const auto sampleFormat : {QAudioFormat::UInt8, QAudioFormat::Int16, QAudioFormat::Int32, QAudioFormat::Float}) {
+        for (int channels : {1, 2}) {
+            const QString name = QStringLiteral("%1-%2ch")
+                .arg(PcmConversion::sampleFormatName(sampleFormat)).arg(channels);
+            QTest::newRow(qPrintable(name)) << static_cast<int>(sampleFormat) << channels;
+        }
+    }
+}
+
+void AudioEngineTest::analyzesLiveToneWindows()
+{
+    QFETCH(int, sampleFormat);
+    QFETCH(int, channels);
+    const auto formatType = static_cast<QAudioFormat::SampleFormat>(sampleFormat);
+    const QAudioFormat format = pcmFormat(48'000, channels, formatType);
+    const QByteArray pcm = makeTonePcm(formatType, channels, 0.5, 0.0, 3.2);
+    const qint64 endFrame = pcm.size() / format.bytesPerFrame();
+    const LiveAnalysisMetrics metrics = LiveAnalysisComputer::analyze(pcm, format, 0, endFrame);
+
+    QVERIFY2(metrics.valid, qPrintable(metrics.error));
+    const double sampleTolerance = formatType == QAudioFormat::UInt8 ? 0.3 : 0.03;
+    QVERIFY(std::abs(metrics.samplePeak + 6.0206) < sampleTolerance);
+    QVERIFY(std::abs(metrics.rms + 9.0309) < sampleTolerance);
+    QVERIFY(std::abs(metrics.truePeak + 6.0206) < 0.25);
+    const double expectedLufs = channels == 1 ? -9.07 : -6.06;
+    const double loudnessTolerance = formatType == QAudioFormat::UInt8 ? 0.35 : 0.15;
+    QVERIFY(std::abs(metrics.momentaryLoudness - expectedLufs) < loudnessTolerance);
+    QVERIFY(std::abs(metrics.shortTermLoudness - expectedLufs) < loudnessTolerance);
+}
+
+void AudioEngineTest::liveShortTermWaitsForThreeSeconds()
+{
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const QByteArray pcm = makeTonePcm(QAudioFormat::Float, 2, 0.5, 0.0, 0.5);
+    const LiveAnalysisMetrics metrics = LiveAnalysisComputer::analyze(
+        pcm, format, 0, pcm.size() / format.bytesPerFrame());
+    QVERIFY(metrics.valid);
+    QVERIFY(std::isfinite(metrics.momentaryLoudness));
+    QVERIFY(std::isnan(metrics.shortTermLoudness));
+
+    const QByteArray silence(qRound64(3.1 * format.sampleRate()) * format.bytesPerFrame(), '\0');
+    const LiveAnalysisMetrics silent = LiveAnalysisComputer::analyze(
+        silence, format, 0, silence.size() / format.bytesPerFrame());
+    QVERIFY(silent.valid);
+    QVERIFY(std::isinf(silent.samplePeak) && silent.samplePeak < 0.0);
+    QVERIFY(std::isinf(silent.truePeak) && silent.truePeak < 0.0);
+    QVERIFY(std::isinf(silent.rms) && silent.rms < 0.0);
+    QVERIFY(std::isinf(silent.momentaryLoudness) && silent.momentaryLoudness < 0.0);
+    QVERIFY(std::isinf(silent.shortTermLoudness) && silent.shortTermLoudness < 0.0);
+}
+
+void AudioEngineTest::clearedLiveAnalysisIgnoresRunningResult()
+{
+    LiveAnalysisController controller;
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const QByteArray pcm = makeTonePcm(QAudioFormat::Float, 2, 0.5, 0.0, 3.2);
+    const qint64 endFrame = pcm.size() / format.bytesPerFrame();
+
+    controller.request(pcm, pcm, format, 0, endFrame);
+    QCOMPARE(controller.state(), LiveAnalysisController::Running);
+    controller.clear();
+    QCOMPARE(controller.state(), LiveAnalysisController::Empty);
+    QTest::qWait(300);
+    QCOMPARE(controller.state(), LiveAnalysisController::Empty);
+
+    controller.request(pcm, pcm, format, 0, endFrame);
+    QTRY_COMPARE_WITH_TIMEOUT(controller.state(), LiveAnalysisController::Ready, 5'000);
+    QVERIFY(controller.metricsA().value(QStringLiteral("momentaryLoudness")).toDouble() < 0.0);
+    QVERIFY(controller.metricsB().value(QStringLiteral("momentaryLoudness")).toDouble() < 0.0);
+}
+
+void AudioEngineTest::pairedLiveAnalysisTracksExtrema()
+{
+    LiveAnalysisController controller;
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const QByteArray quiet = makeTonePcm(QAudioFormat::Float, 2, 0.1, 0.0, 3.2);
+    const QByteArray loud = makeTonePcm(QAudioFormat::Float, 2, 0.8, 0.0, 3.2);
+    const qint64 endFrame = quiet.size() / format.bytesPerFrame();
+
+    controller.request(quiet, loud, format, 0, endFrame);
+    QTRY_COMPARE_WITH_TIMEOUT(controller.state(), LiveAnalysisController::Ready, 5'000);
+    const double quietPeak = controller.metricsA().value(QStringLiteral("samplePeak")).toDouble();
+    const double loudPeak = controller.metricsB().value(QStringLiteral("samplePeak")).toDouble();
+    QVERIFY(loudPeak > quietPeak + 17.0);
+    QCOMPARE(controller.minimumA().value(QStringLiteral("samplePeak")).toDouble(), quietPeak);
+    QCOMPARE(controller.maximumA().value(QStringLiteral("samplePeak")).toDouble(), quietPeak);
+    QCOMPARE(controller.minimumB().value(QStringLiteral("samplePeak")).toDouble(), loudPeak);
+    QCOMPARE(controller.maximumB().value(QStringLiteral("samplePeak")).toDouble(), loudPeak);
+
+    QSignalSpy updated(&controller, &LiveAnalysisController::resultsChanged);
+    controller.invalidatePending();
+    controller.request(loud, quiet, format, 0, endFrame);
+    QTRY_VERIFY_WITH_TIMEOUT(updated.count() > 0, 5'000);
+    QCOMPARE(controller.metricsA().value(QStringLiteral("samplePeak")).toDouble(), loudPeak);
+    QCOMPARE(controller.metricsB().value(QStringLiteral("samplePeak")).toDouble(), quietPeak);
+    QCOMPARE(controller.minimumA().value(QStringLiteral("samplePeak")).toDouble(), quietPeak);
+    QCOMPARE(controller.maximumA().value(QStringLiteral("samplePeak")).toDouble(), loudPeak);
+    QCOMPARE(controller.minimumB().value(QStringLiteral("samplePeak")).toDouble(), quietPeak);
+    QCOMPARE(controller.maximumB().value(QStringLiteral("samplePeak")).toDouble(), loudPeak);
+
+    controller.clear();
+    QCOMPARE(controller.state(), LiveAnalysisController::Empty);
+    QVERIFY(std::isnan(controller.minimumA().value(QStringLiteral("samplePeak")).toDouble()));
+    QVERIFY(std::isnan(controller.maximumB().value(QStringLiteral("samplePeak")).toDouble()));
+}
+
+void AudioEngineTest::multichannelAnalysisIsExplicitlyUnsupported()
+{
+    const QAudioFormat format = pcmFormat(48'000, 6, QAudioFormat::Float);
+    const QByteArray pcm(format.sampleRate() * format.bytesPerFrame(), '\0');
+    const AnalysisMetrics metrics = AnalysisComputer::analyze(pcm, format);
+    QVERIFY(!metrics.valid);
+    QVERIFY(metrics.error.contains(QStringLiteral("Multichannel")));
+    const LiveAnalysisMetrics liveMetrics = LiveAnalysisComputer::analyze(
+        pcm, format, 0, format.sampleRate());
+    QVERIFY(!liveMetrics.valid);
+    QVERIFY(liveMetrics.error.contains(QStringLiteral("Multichannel")));
+}
+
+void AudioEngineTest::staleSelectionAnalysisIsIgnored()
+{
+    AnalysisController controller;
+    const QAudioFormat format = pcmFormat(48'000, 2, QAudioFormat::Float);
+    const QByteArray quiet = makeTonePcm(QAudioFormat::Float, 2, 0.1, 0.0, 6.0);
+    const QByteArray loud = makeTonePcm(QAudioFormat::Float, 2, 0.8, 0.0, 6.0);
+    controller.requestSelection(quiet, format, quiet, format, 0.0, 5.0);
+    controller.requestSelection(loud, format, loud, format, 0.0, 5.0);
+    QTRY_COMPARE_WITH_TIMEOUT(controller.selectionState(), AnalysisController::Ready, 15'000);
+    const double samplePeak = controller.selectionA().value(QStringLiteral("samplePeak")).toDouble();
+    QVERIFY(std::abs(samplePeak - 20.0 * std::log10(0.8)) < 0.03);
+}
+
+void AudioEngineTest::selectionUsesEachNativeSampleRate()
+{
+    AnalysisController controller;
+    const QAudioFormat formatA = pcmFormat(48'000, 1, QAudioFormat::Float);
+    const QAudioFormat formatB = pcmFormat(44'100, 1, QAudioFormat::Int16);
+    const QByteArray pcmA = makeTonePcm(QAudioFormat::Float, 1, 0.5, 0.0, 7.0);
+    const QByteArray pcmB = PcmConversion::convert(pcmA, formatA, formatB);
+    controller.requestSelection(pcmA, formatA, pcmB, formatB, 1.0, 6.0);
+    QTRY_COMPARE_WITH_TIMEOUT(controller.selectionState(), AnalysisController::Ready, 15'000);
+    const double peakA = controller.selectionA().value(QStringLiteral("samplePeak")).toDouble();
+    const double peakB = controller.selectionB().value(QStringLiteral("samplePeak")).toDouble();
+    QVERIFY(std::abs(peakA - peakB) < 0.03);
+}
+
+void AudioEngineTest::convertsMismatchedTracksForPlayback()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString trackA = directory.filePath(QStringLiteral("mismatch-a.wav"));
+    const QString trackB = directory.filePath(QStringLiteral("mismatch-b.wav"));
+    QVERIFY(writeTone(trackA, 440.0, 44'100, 1));
+    QVERIFY(writeTone(trackB, 660.0, 48'000, 2));
+
+    AudioEngine engine;
+    engine.loadA(QUrl::fromLocalFile(trackA));
+    QTRY_VERIFY_WITH_TIMEOUT(!engine.loading(), 15'000);
+    engine.loadB(QUrl::fromLocalFile(trackB));
+    QTRY_VERIFY_WITH_TIMEOUT(engine.ready(), 15'000);
+    QVERIFY2(engine.errorMessage().isEmpty(), qPrintable(engine.errorMessage()));
+    QVERIFY(!engine.trackANativePlayback() || !engine.trackBNativePlayback());
+    if (!engine.trackANativePlayback()) {
+        QVERIFY(engine.trackAPlaybackSummary().startsWith(QStringLiteral("Playback conversion:")));
+    }
+    if (!engine.trackBNativePlayback()) {
+        QVERIFY(engine.trackBPlaybackSummary().startsWith(QStringLiteral("Playback conversion:")));
+    }
+    QTRY_COMPARE_WITH_TIMEOUT(engine.analysis()->selectionState(), AnalysisController::Ready, 15'000);
+}
+
 void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
 {
     QTemporaryDir directory;
@@ -252,6 +615,20 @@ void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
     QVERIFY2(engine.errorMessage().isEmpty(), qPrintable(engine.errorMessage()));
     QVERIFY(engine.duration() >= 7.9);
     QCOMPARE(engine.activeTrack(), 0);
+    QVERIFY(engine.canOpenAnalysis());
+    QVERIFY(engine.trackASourceSummary().contains(QStringLiteral("PCM Int16")));
+    QVERIFY(engine.trackBSourceSummary().contains(QStringLiteral("codec —")));
+    QVERIFY(!engine.trackAPlaybackSummary().isEmpty());
+    QVERIFY(!engine.trackBPlaybackSummary().isEmpty());
+    QTRY_COMPARE_WITH_TIMEOUT(engine.analysis()->fileStateA(), AnalysisController::Ready, 15'000);
+    QTRY_COMPARE_WITH_TIMEOUT(engine.analysis()->fileStateB(), AnalysisController::Ready, 15'000);
+    QTRY_COMPARE_WITH_TIMEOUT(engine.analysis()->selectionState(), AnalysisController::Ready, 15'000);
+    QVERIFY(engine.analysis()->fileA().value(QStringLiteral("samplePeak")).toDouble() < 0.0);
+    QVERIFY(engine.analysis()->fileB().value(QStringLiteral("samplePeak")).toDouble() < 0.0);
+    const bool commonNativeAccepted = QMediaDevices::defaultAudioOutput().isFormatSupported(
+        pcmFormat(48'000, 2, QAudioFormat::Int16));
+    QCOMPARE(engine.trackANativePlayback(), commonNativeAccepted);
+    QCOMPARE(engine.trackBNativePlayback(), commonNativeAccepted);
 
     engine.setSelectionEnd(3.0);
     QCOMPARE(engine.selectionEnd(), 5.0);
@@ -285,6 +662,7 @@ void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
     const int expressNetB = engine.netB();
     engine.startBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRunning);
+    QVERIFY(!engine.canOpenAnalysis());
     QCOMPARE(engine.blindVoteCount(), 0);
     QVERIFY(!mentionsTrackIdentity(engine.statusMessage()));
 
@@ -308,10 +686,12 @@ void AudioEngineTest::decodesPairAndEnforcesFiveSecondSelection()
     const double positionBeforeReveal = engine.position();
     engine.revealBlindSession();
     QCOMPARE(engine.listeningMode(), AudioEngine::BlindRevealed);
+    QVERIFY(!engine.canOpenAnalysis());
     QCOMPARE(engine.position(), positionBeforeReveal);
     QVERIFY(mentionsTrackIdentity(engine.statusMessage()));
     engine.returnToExpress();
     QCOMPARE(engine.listeningMode(), AudioEngine::Express);
+    QVERIFY(engine.canOpenAnalysis());
     QCOMPARE(engine.netA(), expressNetA);
     QCOMPARE(engine.netB(), expressNetB);
 }
@@ -327,7 +707,7 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
     const QString trackA = directory.filePath(QStringLiteral("playback-a.wav"));
     const QString trackB = directory.filePath(QStringLiteral("playback-b.wav"));
     QVERIFY(writeTone(trackA, 440.0));
-    QVERIFY(writeTone(trackB, 660.0));
+    QVERIFY(writeTone(trackB, 660.0, 48'000, 2, 2'000.0));
 
     AudioEngine engine;
     engine.loadA(QUrl::fromLocalFile(trackA));
@@ -342,6 +722,22 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
     engine.play();
     QVERIFY2(engine.playing(), qPrintable(engine.errorMessage()));
     QTRY_VERIFY_WITH_TIMEOUT(engine.position() > 0.05, 3'000);
+    QTRY_COMPARE_WITH_TIMEOUT(engine.liveAnalysis()->state(), LiveAnalysisController::Ready, 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(std::isfinite(engine.liveAnalysis()->metricsA()
+        .value(QStringLiteral("momentaryLoudness")).toDouble()), 5'000);
+    QTRY_VERIFY_WITH_TIMEOUT(std::isfinite(engine.liveAnalysis()->metricsB()
+        .value(QStringLiteral("momentaryLoudness")).toDouble()), 5'000);
+    const double livePeakA = engine.liveAnalysis()->metricsA().value(QStringLiteral("samplePeak")).toDouble();
+    const double livePeakB = engine.liveAnalysis()->metricsB().value(QStringLiteral("samplePeak")).toDouble();
+    QVERIFY2(livePeakB < livePeakA - 10.0,
+        qPrintable(QStringLiteral("A=%1 dBFS, B=%2 dBFS").arg(livePeakA).arg(livePeakB)));
+    const double maximumBeforeToggle = engine.liveAnalysis()->maximumA()
+        .value(QStringLiteral("samplePeak")).toDouble();
+    engine.toggleTrack();
+    QTest::qWait(300);
+    QCOMPARE(engine.liveAnalysis()->maximumA()
+        .value(QStringLiteral("samplePeak")).toDouble(), maximumBeforeToggle);
+    engine.toggleTrack();
 
     const double positionBeforeForward = engine.position();
     engine.seekForward();
@@ -369,6 +765,10 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
     QTRY_VERIFY_WITH_TIMEOUT(engine.position() > revealedPosition + 0.05, 3'000);
 
     engine.pause();
+    QTRY_COMPARE_WITH_TIMEOUT(engine.liveAnalysis()->state(), LiveAnalysisController::Ready, 5'000);
+    const double frozenPeak = engine.liveAnalysis()->metricsA().value(QStringLiteral("samplePeak")).toDouble();
+    QTest::qWait(300);
+    QCOMPARE(engine.liveAnalysis()->metricsA().value(QStringLiteral("samplePeak")).toDouble(), frozenPeak);
     const double positionBeforeBackward = engine.position();
     engine.seekBackward();
     QVERIFY(engine.position() < positionBeforeBackward);
@@ -380,6 +780,9 @@ void AudioEngineTest::playbackAdvancesWithDefaultOutput()
     QTRY_VERIFY_WITH_TIMEOUT(engine.position() > pausedPosition + 0.05, 3'000);
     engine.stop();
     QVERIFY(!engine.playing());
+    QCOMPARE(engine.liveAnalysis()->state(), LiveAnalysisController::Empty);
+    QVERIFY(std::isnan(engine.liveAnalysis()->minimumA()
+        .value(QStringLiteral("samplePeak")).toDouble()));
     QCOMPARE(engine.position(), engine.selectionStart());
     QTest::qWait(300);
     QCOMPARE(engine.position(), engine.selectionStart());

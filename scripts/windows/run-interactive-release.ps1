@@ -11,7 +11,14 @@ if (Test-Path -LiteralPath $formatFixtureDirectory -PathType Container) {
 }
 
 try {
-    & (Join-Path $PSScriptRoot 'build-release.ps1') *>&1 | Tee-Object -FilePath $logPath
+    $buildScript = Join-Path $PSScriptRoot 'build-release.ps1'
+    $ErrorActionPreference = 'Continue'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $buildScript *> $logPath
+    $buildExitCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($buildExitCode -ne 0) {
+        throw "Interactive release build failed with exit code $buildExitCode"
+    }
     exit 0
 } catch {
     ($_ | Out-String) | Add-Content -LiteralPath $logPath -Encoding utf8

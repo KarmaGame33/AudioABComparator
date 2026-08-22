@@ -17,7 +17,7 @@ Les commandes de compilation supposent que le projet respectera ce contrat :
 - tests enregistrés avec CTest ;
 - règles CMake `install()` installant l'application dans `bin/` sous Linux/Windows et comme bundle sous macOS ;
 - dépendances Qt du MVP Express déclarées dans le dépôt ;
-- libsndfile et libebur128 réservées au futur mode Étendu si leur intégration reste nécessaire ;
+- libebur128 1.2.6 téléchargée avec un SHA-256 figé puis liée statiquement, sans bibliothèque partagée supplémentaire ;
 - aucun script ne dépend d'un IDE.
 
 Les commandes Windows ci-dessous utilisent Qt 6.9.3 et Visual Studio 2022. Elles s'appliquent à Windows 10 et Windows 11 x64. Les commandes Arch Linux ont été validées pour le build natif ; la production AppImage reste distincte.
@@ -42,10 +42,10 @@ Dans Konsole avec fish :
 
 ```fish
 sudo pacman -Syu
-sudo pacman -S --needed base-devel cmake ninja git pkgconf qt6-base qt6-declarative qt6-multimedia qt6-multimedia-ffmpeg qt6-wayland libsndfile libebur128
+sudo pacman -S --needed base-devel cmake ninja git pkgconf qt6-base qt6-declarative qt6-multimedia qt6-multimedia-ffmpeg qt6-wayland
 ```
 
-Les paquets Qt, libsndfile et libebur128 proviennent des dépôts officiels Arch ; aucun paquet AUR n'est requis.
+Les paquets Qt proviennent des dépôts officiels Arch ; aucun paquet AUR n'est requis. Une connexion réseau est nécessaire lors de la première configuration CMake pour télécharger l’archive officielle libebur128 1.2.6. CMake contrôle son SHA-256 avant extraction et la compile statiquement.
 
 Vérification :
 
@@ -53,8 +53,6 @@ Vérification :
 cmake --version
 ninja --version
 qtpaths6 --qt-version
-pkg-config --modversion sndfile
-pkg-config --modversion libebur128
 ```
 
 ### 3.2 Configurer une compilation Release
@@ -123,22 +121,22 @@ Docker doit être installé et accessible à l’utilisateur courant. Depuis la 
 ```
 
 Le script construit l’application dans une image Ubuntu 22.04 LTS figée, installe Qt 6.9.3, exécute CTest avec des pistes WAV, FLAC et MP3 et assemble les plugins Qt Multimedia, XCB et Wayland. Les outils `linuxdeploy` et `linuxdeploy-plugin-qt` téléchargés sont contrôlés par SHA-256.
-La construction vérifie aussi que l’intégration cliente Qt Wayland-EGL est réellement présente dans l’AppImage finale.
+La construction vérifie aussi que l’intégration cliente Qt Wayland-EGL et le thème `xdgdesktopportal` sont réellement présents dans l’AppImage finale. Sous Linux, l’application préfère le portail de bureau pour obtenir le sélecteur de fichiers du système lorsqu’une session D-Bus est disponible et que le service portail répond. Cette logique est intégrée au binaire et s’applique donc également à `build/linux-release/app/ab-compare`, pas seulement à l’AppImage. La sonde est limitée à une seconde. L’application respecte un éventuel `QT_QPA_PLATFORMTHEME` défini par l’utilisateur et conserve le dialogue Qt Quick comme solution de repli si la sonde, le service ou son outil d’interrogation manque.
 
 Les fichiers produits sont :
 
 ```text
-dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
+dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
 dist/release/SHA256SUMS-linux
 ```
 
 Validation locale :
 
 ```fish
-chmod +x dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
-./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage --smoke-test
-./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
-env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.2.1-beta.4-linux-x86_64.AppImage
+chmod +x dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
+./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage --smoke-test
+./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
+env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
 ```
 
 Les deux derniers lancements doivent afficher et maintenir la fenêtre, respectivement sous Wayland natif et XWayland/XCB. Ils sont indispensables : le smoke test seul se termine avant l’initialisation du rendu de la première trame.
@@ -195,20 +193,9 @@ Vérification :
 
 La version Qt est volontairement fixée pour rendre les builds reproductibles. Sa mise à jour devra être faite explicitement dans ce document et dans la CI.
 
-### 4.4 Préparer vcpkg et les bibliothèques du futur mode Étendu (facultatif pour Express)
+### 4.4 Dépendance d’analyse
 
-Choisir `C:\Dev\vcpkg` comme emplacement stable :
-
-```powershell
-New-Item -ItemType Directory -Force -Path 'C:\Dev' | Out-Null
-git clone https://github.com/microsoft/vcpkg.git C:\Dev\vcpkg
-& 'C:\Dev\vcpkg\bootstrap-vcpkg.bat' -disableMetrics
-& 'C:\Dev\vcpkg\vcpkg.exe' install libsndfile:x64-windows libebur128:x64-windows --disable-metrics
-```
-
-Si `C:\Dev\vcpkg` existe déjà, ne pas relancer `git clone`. Mettre vcpkg à jour séparément et contrôler les versions avant de changer le build de référence.
-
-Le MVP Express actuel n'utilise pas encore ces deux bibliothèques. Cette section peut donc être ignorée pour sa compilation.
+Il n’est pas nécessaire d’installer vcpkg, libsndfile ou une DLL libebur128. Lors de la première configuration, CMake télécharge l’archive officielle libebur128 1.2.6, vérifie le SHA-256 figé dans `CMakeLists.txt`, puis la lie statiquement. La machine de build doit donc disposer d’un accès HTTPS à GitHub à cette étape ; les reconfigurations suivantes réutilisent la source déjà présente dans le dossier de build.
 
 ### 4.5 Charger l'environnement MSVC
 
@@ -262,7 +249,7 @@ Lancer cette version :
 & '.\dist\windows\bin\ab-compare.exe'
 ```
 
-Le MVP Express n'utilise pas libsndfile ni libebur128. `windeployqt` déploie Qt, ses plugins et le backend FFmpeg fourni par Qt. Une vérification sur une machine Windows propre reste obligatoire avant publication.
+libebur128 est déjà incorporée statiquement dans l’exécutable. `windeployqt` déploie Qt, ses plugins et le backend FFmpeg fourni par Qt ; aucune DLL libebur128 ne doit apparaître. Une vérification sur une machine Windows propre reste obligatoire avant publication.
 
 ### 4.9 Produire le ZIP de release
 
@@ -273,7 +260,7 @@ Après un build et des tests réussis :
 Get-Content '.\dist\release\SHA256SUMS'
 ```
 
-Le script crée `AudioABComparator-0.2.1-beta.4-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md` et les textes LGPL. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
+Le script crée `AudioABComparator-0.3.0-beta.3-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, les textes LGPL et la licence MIT de libebur128. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
 
 ## 5. macOS — procédure préparée mais non validée
 
@@ -296,16 +283,9 @@ brew update
 brew install cmake ninja qt git
 ```
 
-### 5.3 Installer vcpkg et les bibliothèques audio
+### 5.3 Dépendance d’analyse
 
-```zsh
-mkdir -p "$HOME/Dev"
-git clone https://github.com/microsoft/vcpkg.git "$HOME/Dev/vcpkg"
-"$HOME/Dev/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
-"$HOME/Dev/vcpkg/vcpkg" install libsndfile:arm64-osx libebur128:arm64-osx --disable-metrics
-```
-
-Sur un Mac Intel, remplacer `arm64-osx` par `x64-osx` dans cette section et dans la configuration CMake.
+Comme sur Linux et Windows, CMake télécharge, vérifie et compile statiquement libebur128 1.2.6. Aucun gestionnaire de dépendances audio supplémentaire n’est requis.
 
 ### 5.4 Configurer, compiler et tester sur Apple Silicon
 
@@ -314,9 +294,7 @@ Depuis la racine du dépôt :
 ```zsh
 cmake -S . -B build/macos-release -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" \
-  -DCMAKE_TOOLCHAIN_FILE="$HOME/Dev/vcpkg/scripts/buildsystems/vcpkg.cmake" \
-  -DVCPKG_TARGET_TRIPLET=arm64-osx
+  -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
 cmake --build build/macos-release --parallel "$(sysctl -n hw.logicalcpu)"
 ctest --test-dir build/macos-release --output-on-failure
 cmake --install build/macos-release --prefix dist/macos
@@ -347,17 +325,15 @@ Sur chaque OS validé :
 5. basculer A/B au clavier au moins 100 fois ;
 6. vérifier Haut/Bas et les compteurs ;
 7. modifier les raccourcis puis redémarrer l'application ;
-8. vérifier que les raccourcis persistent mais que fichiers, sélection, votes et analyses ont disparu ;
-9. vérifier l'absence de clic récurrent, dérive ou underrun ;
-10. exécuter l'application sur une machine propre avant publication.
+8. vérifier Analyse sur le fichier entier et la sélection, puis confirmer que toute conversion est détaillée séparément pour A et B ;
+9. vérifier que les raccourcis persistent mais que fichiers, sélection, votes et analyses ont disparu ;
+10. vérifier l'absence de clic récurrent, dérive ou underrun ;
+11. exécuter l'application sur une machine propre avant publication.
 
 ## 7. Sources des procédures
 
 - [Paquet Qt Multimedia d'Arch Linux](https://archlinux.org/packages/extra/x86_64/qt6-multimedia/)
-- [Paquet libsndfile d'Arch Linux](https://archlinux.org/packages/extra/x86_64/libsndfile/)
-- [Paquet libebur128 d'Arch Linux](https://archlinux.org/packages/extra/x86_64/libebur128/)
+- [Source officielle libebur128 1.2.6](https://github.com/jiixyj/libebur128/releases/tag/v1.2.6)
 - [Installation de Qt avec aqtinstall](https://aqtinstall.readthedocs.io/en/stable/getting_started.html)
 - [Paramètres d'installation de Visual Studio](https://learn.microsoft.com/visualstudio/install/use-command-line-parameters-to-install-visual-studio)
-- [Port libsndfile de vcpkg](https://vcpkg.io/en/package/libsndfile.html)
-- [Port libebur128 de vcpkg](https://vcpkg.io/en/package/libebur128.html)
 - [Formule Homebrew Qt](https://formulae.brew.sh/formula/qt.html)

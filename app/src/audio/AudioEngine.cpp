@@ -1,9 +1,12 @@
 #include "audio/AudioEngine.h"
 
+#include "audio/PcmConversion.h"
+
 #include <QAudioDevice>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QMediaDevices>
+#include <QMimeDatabase>
 #include <QRandomGenerator>
 #include <QTime>
 
@@ -15,11 +18,14 @@ namespace {
 constexpr double minimumSelectionSeconds = 5.0;
 constexpr double seekStepSeconds = 5.0;
 constexpr int waveformPointCount = 900;
+constexpr int liveAnalysisIntervalMilliseconds = 200;
 }
 
 AudioEngine::AudioEngine(QObject *parent)
     : QObject(parent)
     , m_pcmDevice(this)
+    , m_analysis(this)
+    , m_liveAnalysis(this)
     , m_settings(QStringLiteral("KarmaApps"), QStringLiteral("AudioABComparator"))
 {
     const QAudioDevice device = QMediaDevices::defaultAudioOutput();
@@ -36,9 +42,6 @@ AudioEngine::AudioEngine(QObject *parent)
     setStatusMessage(QT_TR_NOOP("Load two audio files to begin"));
     m_pcmDevice.setTransitionBeepVolume(static_cast<float>(m_transitionBeepVolume) / 100.0F);
 
-    m_decoderA.setAudioFormat(m_format);
-    m_decoderB.setAudioFormat(m_format);
-
     connect(&m_decoderA, &QAudioDecoder::bufferReady, this, [this] { appendBuffer(Track::A, m_decoderA.read()); });
     connect(&m_decoderB, &QAudioDecoder::bufferReady, this, [this] { appendBuffer(Track::B, m_decoderB.read()); });
     connect(&m_decoderA, &QAudioDecoder::finished, this, [this] { decoderFinished(Track::A); });
@@ -48,6 +51,8 @@ AudioEngine::AudioEngine(QObject *parent)
 
     m_positionTimer.setInterval(33);
     connect(&m_positionTimer, &QTimer::timeout, this, &AudioEngine::updatePosition);
+    m_liveAnalysisTimer.setInterval(liveAnalysisIntervalMilliseconds);
+    connect(&m_liveAnalysisTimer, &QTimer::timeout, this, &AudioEngine::updateLiveAnalysis);
 }
 
 AudioEngine::~AudioEngine()
@@ -60,6 +65,14 @@ AudioEngine::~AudioEngine()
 
 QString AudioEngine::trackAName() const { return m_trackAName; }
 QString AudioEngine::trackBName() const { return m_trackBName; }
+QString AudioEngine::trackASourceSummary() const { return sourceSummary(Track::A); }
+QString AudioEngine::trackBSourceSummary() const { return sourceSummary(Track::B); }
+QString AudioEngine::trackAPlaybackSummary() const { return playbackSummary(Track::A); }
+QString AudioEngine::trackBPlaybackSummary() const { return playbackSummary(Track::B); }
+bool AudioEngine::trackANativePlayback() const { return m_nativePlaybackA; }
+bool AudioEngine::trackBNativePlayback() const { return m_nativePlaybackB; }
+AnalysisController *AudioEngine::analysis() { return &m_analysis; }
+LiveAnalysisController *AudioEngine::liveAnalysis() { return &m_liveAnalysis; }
 bool AudioEngine::loadedA() const { return m_loadedA; }
 bool AudioEngine::loadedB() const { return m_loadedB; }
 bool AudioEngine::ready() const { return m_ready; }
@@ -136,21 +149,31 @@ void AudioEngine::load(Track track, const QUrl &url)
 
     QAudioDecoder &decoder = track == Track::A ? m_decoderA : m_decoderB;
     decoder.stop();
-    decoder.setAudioFormat(m_format);
+    decoder.setAudioFormat(QAudioFormat {});
     decoder.setSource(url);
 
     const QString name = QFileInfo(url.toLocalFile()).fileName();
     if (track == Track::A) {
+        m_analysis.clearTrack(0);
         m_pcmA.clear();
+        m_nativePcmA.clear();
+        m_nativeFormatA = {};
         m_waveformA.clear();
         m_trackAName = name;
+        m_trackAPath = url.toLocalFile();
+        m_nativePlaybackA = false;
         m_loadedA = false;
         m_loadingA = true;
         emit waveformAChanged();
     } else {
+        m_analysis.clearTrack(1);
         m_pcmB.clear();
+        m_nativePcmB.clear();
+        m_nativeFormatB = {};
         m_waveformB.clear();
         m_trackBName = name;
+        m_trackBPath = url.toLocalFile();
+        m_nativePlaybackB = false;
         m_loadedB = false;
         m_loadingB = true;
         emit waveformBChanged();
@@ -169,19 +192,23 @@ void AudioEngine::appendBuffer(Track track, const QAudioBuffer &buffer)
     if (!buffer.isValid()) {
         return;
     }
-    if (buffer.format() != m_format) {
-        setErrorMessage(QT_TR_NOOP("The audio backend did not provide the requested common PCM format."));
+    QAudioFormat &nativeFormat = track == Track::A ? m_nativeFormatA : m_nativeFormatB;
+    if (!nativeFormat.isValid()) {
+        nativeFormat = buffer.format();
+    } else if (!PcmConversion::formatsMatch(buffer.format(), nativeFormat)) {
+        setErrorMessage(QT_TR_NOOP("The decoded PCM format changed unexpectedly within the track."));
         emit statusChanged();
         return;
     }
-    QByteArray &destination = track == Track::A ? m_pcmA : m_pcmB;
+    QByteArray &destination = track == Track::A ? m_nativePcmA : m_nativePcmB;
     destination.append(buffer.constData<char>(), buffer.byteCount());
 }
 
 void AudioEngine::decoderFinished(Track track)
 {
-    QByteArray &pcm = track == Track::A ? m_pcmA : m_pcmB;
-    if (pcm.isEmpty()) {
+    QByteArray &nativePcm = track == Track::A ? m_nativePcmA : m_nativePcmB;
+    const QAudioFormat &nativeFormat = track == Track::A ? m_nativeFormatA : m_nativeFormatB;
+    if (nativePcm.isEmpty() || !nativeFormat.isValid()) {
         decoderError(track, QAudioDecoder::FormatError);
         return;
     }
@@ -189,12 +216,14 @@ void AudioEngine::decoderFinished(Track track)
     if (track == Track::A) {
         m_loadingA = false;
         m_loadedA = true;
-        m_waveformA = buildWaveform(m_pcmA);
+        m_waveformA = buildWaveform(m_nativePcmA, m_nativeFormatA);
+        m_analysis.analyzeFile(0, m_nativePcmA, m_nativeFormatA);
         emit waveformAChanged();
     } else {
         m_loadingB = false;
         m_loadedB = true;
-        m_waveformB = buildWaveform(m_pcmB);
+        m_waveformB = buildWaveform(m_nativePcmB, m_nativeFormatB);
+        m_analysis.analyzeFile(1, m_nativePcmB, m_nativeFormatB);
         emit waveformBChanged();
     }
 
@@ -226,16 +255,15 @@ void AudioEngine::decoderError(Track track, QAudioDecoder::Error error)
 
 void AudioEngine::updateReadyState()
 {
-    if (!m_loadedA || !m_loadedB || m_format.bytesPerFrame() <= 0) {
+    if (!m_loadedA || !m_loadedB || !m_nativeFormatA.isValid() || !m_nativeFormatB.isValid()) {
         setStatusMessage(QT_TR_NOOP("Load both tracks"));
         emit statusChanged();
         return;
     }
 
-    const qint64 framesA = m_pcmA.size() / m_format.bytesPerFrame();
-    const qint64 framesB = m_pcmB.size() / m_format.bytesPerFrame();
-    const qint64 commonFrames = std::min(framesA, framesB);
-    m_duration = framesToSeconds(commonFrames);
+    const double durationA = static_cast<double>(m_nativePcmA.size() / m_nativeFormatA.bytesPerFrame()) / m_nativeFormatA.sampleRate();
+    const double durationB = static_cast<double>(m_nativePcmB.size() / m_nativeFormatB.bytesPerFrame()) / m_nativeFormatB.sampleRate();
+    m_duration = std::min(durationA, durationB);
 
     if (m_duration < minimumSelectionSeconds) {
         setErrorMessage(QT_TR_NOOP("The common duration must be at least 5 seconds."));
@@ -245,6 +273,35 @@ void AudioEngine::updateReadyState()
         return;
     }
 
+    const QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    const QAudioFormat preferred = device.preferredFormat();
+    const auto decision = PcmConversion::choosePlaybackFormat(
+        m_nativeFormatA, m_nativeFormatB, preferred,
+        PcmConversion::formatsMatch(m_nativeFormatA, m_nativeFormatB) && device.isFormatSupported(m_nativeFormatA));
+    if (!decision.format.isValid()) {
+        setErrorMessage(QT_TR_NOOP("The default audio output has no usable PCM format."));
+        setStatusMessage(QT_TR_NOOP("Audio playback unavailable"));
+        emit readyChanged();
+        emit statusChanged();
+        return;
+    }
+    m_format = decision.format;
+    m_nativePlaybackA = PcmConversion::formatsMatch(m_nativeFormatA, m_format);
+    m_nativePlaybackB = PcmConversion::formatsMatch(m_nativeFormatB, m_format);
+    m_pcmA = m_nativePlaybackA ? m_nativePcmA : PcmConversion::convert(m_nativePcmA, m_nativeFormatA, m_format);
+    m_pcmB = m_nativePlaybackB ? m_nativePcmB : PcmConversion::convert(m_nativePcmB, m_nativeFormatB, m_format);
+    if (m_pcmA.isEmpty() || m_pcmB.isEmpty()) {
+        setErrorMessage(QT_TR_NOOP("Unable to convert the tracks to the playback format."));
+        setStatusMessage(QT_TR_NOOP("Audio playback unavailable"));
+        emit readyChanged();
+        emit statusChanged();
+        return;
+    }
+
+    const qint64 commonFrames = std::min<qint64>(
+        qRound64(m_duration * m_format.sampleRate()),
+        std::min(m_pcmA.size(), m_pcmB.size()) / m_format.bytesPerFrame());
+    m_duration = framesToSeconds(commonFrames);
     m_selectionStart = 0.0;
     m_selectionEnd = m_duration;
     m_position = 0.0;
@@ -253,6 +310,9 @@ void AudioEngine::updateReadyState()
     m_pcmDevice.setRange(0, commonFrames);
     m_pcmDevice.setLoopEnabled(m_loopEnabled);
     m_pcmDevice.setActiveTrack(0);
+    m_liveAnalysis.clear();
+    m_analysis.requestSelection(m_nativePcmA, m_nativeFormatA, m_nativePcmB, m_nativeFormatB,
+        m_selectionStart, m_selectionEnd);
     rebuildAudioOutput();
     setStatusMessage(QT_TR_NOOP("Ready — first playback will start on A"));
     clearErrorMessage();
@@ -260,6 +320,7 @@ void AudioEngine::updateReadyState()
     emit selectionChanged();
     emit positionChanged();
     emit activeTrackChanged();
+    emit tracksChanged();
     emit statusChanged();
 }
 
@@ -310,6 +371,8 @@ void AudioEngine::play()
     m_playing = true;
     m_paused = false;
     m_positionTimer.start();
+    m_liveAnalysisTimer.start();
+    updateLiveAnalysis();
     clearErrorMessage();
     if (blindRunning()) {
         setStatusMessage(QT_TR_NOOP("Blind playback"));
@@ -335,6 +398,8 @@ void AudioEngine::reportAudioError(QtAudio::Error error)
 {
     m_pcmDevice.setPlaybackEnabled(false);
     m_positionTimer.stop();
+    m_liveAnalysisTimer.stop();
+    m_liveAnalysis.clear();
     m_playing = false;
     m_paused = false;
 
@@ -369,9 +434,11 @@ void AudioEngine::pause()
     m_audioSink->suspend();
     m_pcmDevice.cancelTransitionBeep();
     m_positionTimer.stop();
+    m_liveAnalysisTimer.stop();
     m_playing = false;
     m_paused = true;
     m_position = framesToSeconds(m_pcmDevice.positionFrame());
+    updateLiveAnalysis();
     if (blindRunning()) {
         setStatusMessage(QT_TR_NOOP("Blind playback paused"));
     } else {
@@ -390,6 +457,8 @@ void AudioEngine::stop()
         m_audioSink->reset();
     }
     m_positionTimer.stop();
+    m_liveAnalysisTimer.stop();
+    m_liveAnalysis.clear();
     m_playing = false;
     m_paused = false;
     m_pcmDevice.seekFrame(secondsToFrames(m_selectionStart));
@@ -444,6 +513,7 @@ void AudioEngine::seekToPosition(double seconds, const char *statusSource)
     m_pcmDevice.seekFrame(secondsToFrames(targetPosition));
     m_pcmDevice.clearReachedEnd();
     m_position = targetPosition;
+    m_liveAnalysis.invalidatePending();
     emit positionChanged();
 
     if (restartPlayback) {
@@ -454,6 +524,8 @@ void AudioEngine::seekToPosition(double seconds, const char *statusSource)
             reportAudioError(m_audioSink->error());
             return;
         }
+        m_liveAnalysisTimer.start();
+        updateLiveAnalysis();
     }
 
     setStatusMessage(statusSource);
@@ -480,6 +552,7 @@ void AudioEngine::triggerTrackSelection()
     }
 
     m_pcmDevice.setActiveTrack(activeTrack() == 0 ? 1 : 0);
+    updateLiveAnalysis();
     if (shouldTriggerTransitionBeep(m_transitionBeepEnabled, m_playing, true)) {
         m_pcmDevice.triggerTransitionBeep();
     }
@@ -515,6 +588,7 @@ void AudioEngine::selectBlindTrack(bool selectionCommand)
     }
 
     m_pcmDevice.setActiveTrack(target);
+    updateLiveAnalysis();
     if (shouldTriggerTransitionBeep(m_transitionBeepEnabled, m_playing, selectionCommand)) {
         m_pcmDevice.triggerTransitionBeep();
     }
@@ -653,6 +727,12 @@ void AudioEngine::retranslate()
     m_statusMessage = translatedMessage(m_statusSource, m_statusArguments);
     m_errorMessage = translatedMessage(m_errorSource, m_errorArguments);
     emit statusChanged();
+    emit tracksChanged();
+}
+
+bool AudioEngine::canOpenAnalysis() const
+{
+    return !blindRunning() && !blindRevealed();
 }
 
 void AudioEngine::setStatusMessage(const char *source, const QStringList &arguments)
@@ -714,6 +794,9 @@ void AudioEngine::setSelectionStart(double seconds)
         emit positionChanged();
     }
     emit selectionChanged();
+    m_analysis.requestSelection(m_nativePcmA, m_nativeFormatA, m_nativePcmB, m_nativeFormatB,
+        m_selectionStart, m_selectionEnd);
+    resetAndUpdateLiveAnalysis();
 }
 
 void AudioEngine::setSelectionEnd(double seconds)
@@ -733,6 +816,9 @@ void AudioEngine::setSelectionEnd(double seconds)
         emit positionChanged();
     }
     emit selectionChanged();
+    m_analysis.requestSelection(m_nativePcmA, m_nativeFormatA, m_nativePcmB, m_nativeFormatB,
+        m_selectionStart, m_selectionEnd);
+    resetAndUpdateLiveAnalysis();
 }
 
 void AudioEngine::setLoopEnabled(bool enabled)
@@ -850,14 +936,34 @@ void AudioEngine::updatePosition()
     emit positionChanged();
 }
 
-QVariantList AudioEngine::buildWaveform(const QByteArray &pcm) const
+void AudioEngine::updateLiveAnalysis()
+{
+    if (!m_ready || (!m_playing && !m_paused) || !m_format.isValid()) {
+        return;
+    }
+    const qint64 rangeStartFrame = secondsToFrames(m_selectionStart);
+    const qint64 endFrame = std::clamp(m_pcmDevice.positionFrame(),
+        rangeStartFrame, secondsToFrames(m_selectionEnd));
+    if (endFrame <= rangeStartFrame) {
+        return;
+    }
+    m_liveAnalysis.request(m_pcmA, m_pcmB, m_format, rangeStartFrame, endFrame);
+}
+
+void AudioEngine::resetAndUpdateLiveAnalysis()
+{
+    m_liveAnalysis.clear();
+    updateLiveAnalysis();
+}
+
+QVariantList AudioEngine::buildWaveform(const QByteArray &pcm, const QAudioFormat &format) const
 {
     QVariantList result;
-    if (pcm.isEmpty() || m_format.bytesPerFrame() <= 0) {
+    if (pcm.isEmpty() || format.bytesPerFrame() <= 0) {
         return result;
     }
 
-    const qint64 frameCount = pcm.size() / m_format.bytesPerFrame();
+    const qint64 frameCount = pcm.size() / format.bytesPerFrame();
     const qint64 framesPerPoint = std::max<qint64>(1, frameCount / waveformPointCount);
     result.reserve(static_cast<int>(std::min<qint64>(waveformPointCount, frameCount)));
 
@@ -865,8 +971,8 @@ QVariantList AudioEngine::buildWaveform(const QByteArray &pcm) const
         const qint64 end = std::min(frameCount, begin + framesPerPoint);
         float peak = 0.0F;
         for (qint64 frame = begin; frame < end; ++frame) {
-            for (int channel = 0; channel < m_format.channelCount(); ++channel) {
-                peak = std::max(peak, amplitudeAt(pcm, frame, channel));
+            for (int channel = 0; channel < format.channelCount(); ++channel) {
+                peak = std::max(peak, static_cast<float>(std::abs(PcmConversion::sampleAt(pcm, format, frame, channel))));
             }
         }
         result.append(peak);
@@ -877,35 +983,73 @@ QVariantList AudioEngine::buildWaveform(const QByteArray &pcm) const
     return result;
 }
 
-float AudioEngine::amplitudeAt(const QByteArray &pcm, qint64 frame, int channel) const
+QString AudioEngine::formatSummary(const QAudioFormat &format)
 {
-    const qint64 sampleIndex = frame * m_format.channelCount() + channel;
-    const qint64 offset = sampleIndex * m_format.bytesPerSample();
-    if (offset < 0 || offset + m_format.bytesPerSample() > pcm.size()) {
-        return 0.0F;
+    if (!format.isValid()) {
+        return QStringLiteral("—");
     }
-    const char *source = pcm.constData() + offset;
-    switch (m_format.sampleFormat()) {
-    case QAudioFormat::UInt8:
-        return std::abs((static_cast<float>(static_cast<unsigned char>(*source)) - 128.0F) / 128.0F);
-    case QAudioFormat::Int16: {
-        qint16 value = 0;
-        std::memcpy(&value, source, sizeof(value));
-        return std::abs(static_cast<float>(value) / 32768.0F);
+    return QStringLiteral("%1 kHz • %2 • PCM %3")
+        .arg(format.sampleRate() / 1000.0, 0, 'f', 1)
+        .arg(channelSummary(format))
+        .arg(PcmConversion::sampleFormatName(format.sampleFormat()));
+}
+
+QString AudioEngine::channelSummary(const QAudioFormat &format)
+{
+    if (format.channelConfig() == QAudioFormat::ChannelConfigMono || format.channelCount() == 1) {
+        return QStringLiteral("1 ch (mono)");
     }
-    case QAudioFormat::Int32: {
-        qint32 value = 0;
-        std::memcpy(&value, source, sizeof(value));
-        return std::abs(static_cast<float>(static_cast<double>(value) / 2147483648.0));
+    if (format.channelConfig() == QAudioFormat::ChannelConfigStereo || format.channelCount() == 2) {
+        return QStringLiteral("2 ch (stereo)");
     }
-    case QAudioFormat::Float: {
-        float value = 0.0F;
-        std::memcpy(&value, source, sizeof(value));
-        return std::abs(value);
+    return QStringLiteral("%1 ch (layout 0x%2)")
+        .arg(format.channelCount())
+        .arg(static_cast<quint32>(format.channelConfig()), 0, 16);
+}
+
+QString AudioEngine::sourceSummary(Track track) const
+{
+    const QString &path = track == Track::A ? m_trackAPath : m_trackBPath;
+    const QByteArray &pcm = track == Track::A ? m_nativePcmA : m_nativePcmB;
+    const QAudioFormat &format = track == Track::A ? m_nativeFormatA : m_nativeFormatB;
+    if (path.isEmpty() || !format.isValid()) {
+        return {};
     }
-    default:
-        return 0.0F;
+    const QString container = QFileInfo(path).suffix().toUpper();
+    const QString mime = QMimeDatabase().mimeTypeForFile(path, QMimeDatabase::MatchExtension).name();
+    const double seconds = static_cast<double>(pcm.size() / format.bytesPerFrame()) / format.sampleRate();
+    return QStringLiteral("%1 • %2 • codec — • %3 s • %4")
+        .arg(container.isEmpty() ? QStringLiteral("—") : container, mime)
+        .arg(seconds, 0, 'f', 2)
+        .arg(formatSummary(format));
+}
+
+QString AudioEngine::playbackSummary(Track track) const
+{
+    const bool loaded = track == Track::A ? m_loadedA : m_loadedB;
+    if (!loaded || !m_ready) {
+        return {};
     }
+    const QAudioFormat &source = track == Track::A ? m_nativeFormatA : m_nativeFormatB;
+    const bool native = track == Track::A ? m_nativePlaybackA : m_nativePlaybackB;
+    if (native) {
+        return QCoreApplication::translate("AudioEngine", "Native PCM playback: %1").arg(formatSummary(m_format));
+    }
+    QStringList conversions;
+    if (source.sampleRate() != m_format.sampleRate()) {
+        conversions << QCoreApplication::translate("AudioEngine", "sample rate %1 → %2 kHz")
+            .arg(source.sampleRate() / 1000.0, 0, 'f', 1)
+            .arg(m_format.sampleRate() / 1000.0, 0, 'f', 1);
+    }
+    if (source.channelCount() != m_format.channelCount() || source.channelConfig() != m_format.channelConfig()) {
+        conversions << QCoreApplication::translate("AudioEngine", "channels %1 → %2")
+            .arg(channelSummary(source), channelSummary(m_format));
+    }
+    if (source.sampleFormat() != m_format.sampleFormat()) {
+        conversions << QCoreApplication::translate("AudioEngine", "sample format %1 → %2")
+            .arg(PcmConversion::sampleFormatName(source.sampleFormat()), PcmConversion::sampleFormatName(m_format.sampleFormat()));
+    }
+    return QCoreApplication::translate("AudioEngine", "Playback conversion: %1").arg(conversions.join(QStringLiteral(" • ")));
 }
 
 qint64 AudioEngine::secondsToFrames(double seconds) const

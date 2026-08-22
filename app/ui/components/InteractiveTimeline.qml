@@ -16,6 +16,9 @@ Item {
     property bool interactive: true
     property bool playheadDragging: false
     property real previewPosition: position
+    property bool selectionDragging: false
+    property real previewSelectionStart: selectionStart
+    property real previewSelectionEnd: selectionEnd
 
     signal selectionStartRequested(real seconds)
     signal selectionEndRequested(real seconds)
@@ -26,13 +29,16 @@ Item {
     readonly property real usableWidth: Math.max(1, width - horizontalInset * 2)
     readonly property real selectorHeight: 78
     readonly property real sectionSpacing: 8
+    readonly property real playheadLaneHeight: 28
     readonly property real waveformHeight: Math.max(40,
-        (height - panelInset * 2 - selectorHeight - sectionSpacing * 2) / 2)
+        (height - panelInset * 2 - selectorHeight - sectionSpacing * 2 - playheadLaneHeight) / 2)
     readonly property real topWaveformY: panelInset
     readonly property real selectorY: topWaveformY + waveformHeight + sectionSpacing
-    readonly property real bottomWaveformY: selectorY + selectorHeight + sectionSpacing
-    readonly property real startX: horizontalInset + usableWidth * clampedRatio(selectionStart)
-    readonly property real endX: horizontalInset + usableWidth * clampedRatio(selectionEnd)
+    readonly property real bottomWaveformY: selectorY + selectorHeight + sectionSpacing + playheadLaneHeight
+    readonly property real shownSelectionStart: selectionDragging ? previewSelectionStart : selectionStart
+    readonly property real shownSelectionEnd: selectionDragging ? previewSelectionEnd : selectionEnd
+    readonly property real startX: horizontalInset + usableWidth * clampedRatio(shownSelectionStart)
+    readonly property real endX: horizontalInset + usableWidth * clampedRatio(shownSelectionEnd)
     readonly property real shownPosition: playheadDragging ? previewPosition : position
     readonly property real playheadX: horizontalInset + usableWidth * clampedRatio(shownPosition)
 
@@ -204,7 +210,7 @@ Item {
             anchors.leftMargin: 10
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 6
-            text: qsTr("Start  %1").arg(root.formatTime(root.selectionStart))
+            text: qsTr("Start  %1").arg(root.formatTime(root.shownSelectionStart))
             color: root.darkMode ? "#baf4d8" : "#176246"
             font.pixelSize: 11
             font.bold: true
@@ -215,7 +221,7 @@ Item {
             anchors.rightMargin: 10
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 6
-            text: qsTr("End  %1").arg(root.formatTime(root.selectionEnd))
+            text: qsTr("End  %1").arg(root.formatTime(root.shownSelectionEnd))
             color: root.darkMode ? "#ffe0b5" : "#8a531a"
             font.pixelSize: 11
             font.bold: true
@@ -276,7 +282,7 @@ Item {
         id: playheadBadge
         x: Math.max(root.panelInset + 4,
             Math.min(root.width - root.panelInset - width - 4, root.playheadX - width / 2))
-        y: root.bottomWaveformY + root.waveformHeight - height - 5
+        y: root.bottomWaveformY - height - 3
         width: playheadText.implicitWidth + 14
         height: 22
         radius: 7
@@ -302,30 +308,45 @@ Item {
         enabled: root.interactive && root.duration > 0
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
+        preventStealing: true
         cursorShape: enabled ? Qt.SizeHorCursor : Qt.ArrowCursor
         property int dragTarget: 0 // 1 = début, 2 = fin
 
         function updateSelection(x) {
             const requested = root.timeFromLocalX(x)
             if (dragTarget === 1) {
-                root.selectionStartRequested(Math.max(0, Math.min(root.selectionEnd - 5, requested)))
+                root.previewSelectionStart = Math.max(0, Math.min(root.previewSelectionEnd - 5, requested))
             } else if (dragTarget === 2) {
-                root.selectionEndRequested(Math.max(root.selectionStart + 5, Math.min(root.duration, requested)))
+                root.previewSelectionEnd = Math.max(root.previewSelectionStart + 5,
+                    Math.min(root.duration, requested))
             }
         }
 
         onPressed: mouse => {
+            root.previewSelectionStart = root.selectionStart
+            root.previewSelectionEnd = root.selectionEnd
             const startDistance = Math.abs(mouse.x - (root.startX - root.horizontalInset))
             const endDistance = Math.abs(mouse.x - (root.endX - root.horizontalInset))
             dragTarget = startDistance <= endDistance ? 1 : 2
+            root.selectionDragging = true
             updateSelection(mouse.x)
         }
         onPositionChanged: mouse => {
             if (pressed)
                 updateSelection(mouse.x)
         }
-        onReleased: dragTarget = 0
-        onCanceled: dragTarget = 0
+        onReleased: {
+            if (dragTarget === 1)
+                root.selectionStartRequested(root.previewSelectionStart)
+            else if (dragTarget === 2)
+                root.selectionEndRequested(root.previewSelectionEnd)
+            dragTarget = 0
+            root.selectionDragging = false
+        }
+        onCanceled: {
+            dragTarget = 0
+            root.selectionDragging = false
+        }
     }
 
     component WaveformSeekArea: MouseArea {

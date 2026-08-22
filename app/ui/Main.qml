@@ -14,6 +14,27 @@ ApplicationWindow {
     title: "Audio A/B Comparator — v" + Qt.application.version
     color: window.backgroundColor
     readonly property string translationProbe: qsTr("Settings / Shortcuts")
+    readonly property var languageOptions: [
+        { code: "en", label: "English" },
+        { code: "fr", label: "Français" },
+        { code: "de", label: "Deutsch" },
+        { code: "es", label: "Español" },
+        { code: "pt_BR", label: "Português (Brasil)" },
+        { code: "ja", label: "日本語" },
+        { code: "zh_CN", label: "简体中文" }
+    ]
+    readonly property string languageSelectorProbe: languageOptions.map(function(option) { return option.label }).join(" | ")
+    property int screenMode: 0 // 0 Express, 1 Blind Test, 2 Analysis
+
+    function prepareAnalysisCapture(showLiveMeters) {
+        screenMode = 2
+        Qt.callLater(function() {
+            const flickable = analysisDashboard.contentItem
+            flickable.contentY = showLiveMeters
+                ? Math.max(0, flickable.contentHeight - flickable.height)
+                : 0
+        })
+    }
 
     readonly property bool darkMode: audioEngine.darkMode
     readonly property color colorA: "#44d1b6"
@@ -118,6 +139,29 @@ ApplicationWindow {
     }
 
     Dialog {
+        id: analysisBlockedDialog
+        width: 460
+        anchors.centerIn: parent
+        modal: true
+        title: qsTr("Analysis unavailable")
+        background: Rectangle { color: window.panelRaised; radius: 14; border.color: window.borderColor }
+        contentItem: Label {
+            text: qsTr("Exit the current Blind Test before opening Analysis.")
+            color: window.textPrimary
+            wrapMode: Text.WordWrap
+        }
+        footer: Item {
+            implicitHeight: 58
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                Item { Layout.fillWidth: true }
+                AppButton { text: qsTr("Got it"); highlighted: true; onClicked: analysisBlockedDialog.accept() }
+            }
+        }
+    }
+
+    Dialog {
         id: settingsDialog
         width: 520
         anchors.centerIn: parent
@@ -166,16 +210,8 @@ ApplicationWindow {
                 Label { Layout.fillWidth: true; text: qsTr("Language"); color: window.textPrimary; font.pixelSize: 16; font.bold: true }
                 ComboBox {
                     id: languageSelector
-                    readonly property var languageCodes: ["en", "fr", "de", "es", "pt_BR", "ja", "zh_CN"]
-                    model: [
-                        { code: "en", label: qsTr("English") },
-                        { code: "fr", label: qsTr("French") },
-                        { code: "de", label: qsTr("German") },
-                        { code: "es", label: qsTr("Spanish") },
-                        { code: "pt_BR", label: qsTr("Portuguese (Brazil)") },
-                        { code: "ja", label: qsTr("Japanese") },
-                        { code: "zh_CN", label: qsTr("Simplified Chinese") }
-                    ]
+                    readonly property var languageCodes: window.languageOptions.map(function(option) { return option.code })
+                    model: window.languageOptions
                     textRole: "label"
                     currentIndex: Math.max(0, languageCodes.indexOf(languageManager.currentLanguage))
                     onActivated: languageManager.currentLanguage = model[currentIndex].code
@@ -266,6 +302,8 @@ ApplicationWindow {
         required property color accent
         required property bool active
         required property bool allowFileSelection
+        required property string sourceSummary
+        required property string playbackSummary
         signal chooseFile()
 
         radius: 14
@@ -293,6 +331,8 @@ ApplicationWindow {
                     elide: Text.ElideMiddle
                     font.pixelSize: 15
                 }
+                Label { Layout.fillWidth: true; text: sourceSummary; visible: sourceSummary.length > 0; color: window.textSecondary; elide: Text.ElideRight; font.pixelSize: 10 }
+                Label { Layout.fillWidth: true; text: playbackSummary; visible: playbackSummary.length > 0; color: window.textSecondary; elide: Text.ElideRight; font.pixelSize: 10 }
             }
             AppButton {
                 visible: allowFileSelection
@@ -361,7 +401,8 @@ ApplicationWindow {
             Rectangle {
                 id: modeSelector
                 readonly property bool blindSelected: audioEngine.blindRunning || audioEngine.blindRevealed
-                Layout.preferredWidth: 264
+                readonly property int selectedIndex: window.screenMode === 2 ? 2 : (blindSelected ? 1 : 0)
+                Layout.preferredWidth: 390
                 Layout.preferredHeight: 42
                 radius: 13
                 color: window.darkMode ? "#101620" : "#e4eaf2"
@@ -370,12 +411,12 @@ ApplicationWindow {
 
                 Rectangle {
                     id: selectedModeBackground
-                    x: modeSelector.blindSelected ? modeSelector.width / 2 + 1 : 3
+                    x: modeSelector.selectedIndex * (modeSelector.width / 3) + 3
                     y: 3
-                    width: modeSelector.width / 2 - 4
+                    width: modeSelector.width / 3 - 5
                     height: modeSelector.height - 6
                     radius: 10
-                    color: modeSelector.blindSelected ? window.colorB : window.colorA
+                    color: modeSelector.selectedIndex === 1 ? window.colorB : window.colorA
 
                     Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 150 } }
@@ -388,14 +429,14 @@ ApplicationWindow {
 
                     Button {
                         id: expressModeButton
-                        width: (parent.width - parent.spacing) / 2
+                        width: (parent.width - parent.spacing * 2) / 3
                         height: parent.height
                         hoverEnabled: true
                         flat: true
 
                         background: Rectangle {
                             radius: 10
-                            color: expressModeButton.hovered && modeSelector.blindSelected
+                            color: expressModeButton.hovered && modeSelector.selectedIndex !== 0
                                 ? (window.darkMode ? "#1b2534" : "#d5deea") : "transparent"
                         }
                         contentItem: Row {
@@ -404,25 +445,26 @@ ApplicationWindow {
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 7; height: 7; radius: 4
-                                color: modeSelector.blindSelected ? window.textSecondary : "#08221c"
+                                color: modeSelector.selectedIndex === 0 ? "#08221c" : window.textSecondary
                             }
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: qsTr("Express")
-                                color: modeSelector.blindSelected ? window.textSecondary : "#08221c"
+                                color: modeSelector.selectedIndex === 0 ? "#08221c" : window.textSecondary
                                 font.pixelSize: 13
                                 font.bold: true
                             }
                         }
                         onClicked: {
-                            if (audioEngine.blindRunning) audioEngine.revealBlindSession()
-                            else if (audioEngine.blindRevealed) audioEngine.returnToExpress()
+                            if (window.screenMode === 2) window.screenMode = 0
+                            else if (audioEngine.blindRunning) audioEngine.revealBlindSession()
+                            else if (audioEngine.blindRevealed) { audioEngine.returnToExpress(); window.screenMode = 0 }
                         }
                     }
 
                     Button {
                         id: blindModeButton
-                        width: (parent.width - parent.spacing) / 2
+                        width: (parent.width - parent.spacing * 2) / 3
                         height: parent.height
                         hoverEnabled: true
                         flat: true
@@ -430,7 +472,7 @@ ApplicationWindow {
 
                         background: Rectangle {
                             radius: 10
-                            color: blindModeButton.hovered && !modeSelector.blindSelected
+                            color: blindModeButton.hovered && modeSelector.selectedIndex !== 1
                                 ? (window.darkMode ? "#1b2534" : "#d5deea") : "transparent"
                         }
                         contentItem: Row {
@@ -450,8 +492,33 @@ ApplicationWindow {
                             }
                         }
                         onClicked: {
-                            if (audioEngine.ready) audioEngine.startBlindSession()
+                            if (audioEngine.ready) { window.screenMode = 1; audioEngine.startBlindSession() }
                             else blindTracksDialog.open()
+                        }
+                    }
+
+                    Button {
+                        id: analysisModeButton
+                        width: (parent.width - parent.spacing * 2) / 3
+                        height: parent.height
+                        hoverEnabled: true
+                        flat: true
+                        background: Rectangle {
+                            radius: 10
+                            color: analysisModeButton.hovered && modeSelector.selectedIndex !== 2
+                                ? (window.darkMode ? "#1b2534" : "#d5deea") : "transparent"
+                        }
+                        contentItem: Label {
+                            text: qsTr("Analysis")
+                            color: modeSelector.selectedIndex === 2 ? "#08221c" : window.textSecondary
+                            font.pixelSize: 13
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: {
+                            if (!audioEngine.canOpenAnalysis()) analysisBlockedDialog.open()
+                            else window.screenMode = 2
                         }
                     }
                 }
@@ -478,14 +545,17 @@ ApplicationWindow {
         }
 
         RowLayout {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
-            Layout.preferredHeight: 82
+            Layout.preferredHeight: 112
             spacing: 14
             TrackCard {
                 Layout.fillWidth: true; Layout.fillHeight: true
                 letter: "A"; fileName: audioEngine.trackAName; loaded: audioEngine.loadedA
                 accent: window.colorA; active: audioEngine.ready && !audioEngine.blindRunning && audioEngine.activeTrack === 0
                 allowFileSelection: !modeSelector.blindSelected
+                sourceSummary: audioEngine.trackASourceSummary
+                playbackSummary: audioEngine.trackAPlaybackSummary
                 onChooseFile: fileA.open()
             }
             TrackCard {
@@ -493,11 +563,14 @@ ApplicationWindow {
                 letter: "B"; fileName: audioEngine.trackBName; loaded: audioEngine.loadedB
                 accent: window.colorB; active: audioEngine.ready && !audioEngine.blindRunning && audioEngine.activeTrack === 1
                 allowFileSelection: !modeSelector.blindSelected
+                sourceSummary: audioEngine.trackBSourceSummary
+                playbackSummary: audioEngine.trackBPlaybackSummary
                 onChooseFile: fileB.open()
             }
         }
 
         Rectangle {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 280
@@ -539,6 +612,7 @@ ApplicationWindow {
         }
 
         RowLayout {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
             spacing: 10
             AppSwitch { text: qsTr("Loop"); checked: audioEngine.loopEnabled; enabled: audioEngine.ready; onToggled: audioEngine.loopEnabled = checked }
@@ -583,6 +657,7 @@ ApplicationWindow {
         }
 
         Item {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
             Layout.preferredHeight: 92
 
@@ -652,6 +727,7 @@ ApplicationWindow {
         }
 
         Rectangle {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
             Layout.preferredHeight: 38
             radius: 10
@@ -668,12 +744,37 @@ ApplicationWindow {
         }
 
         Label {
+            visible: window.screenMode !== 2
             Layout.fillWidth: true
             Layout.preferredHeight: 12
             text: qsTr("v%1  •  © 2026 KarmaApps  •  Free distribution  •  Source code on GitHub  •  Qt 6").arg(Qt.application.version)
             color: window.darkMode ? "#657083" : "#748195"
             font.pixelSize: 10
             horizontalAlignment: Text.AlignRight
+        }
+
+        AnalysisDashboard {
+            id: analysisDashboard
+            visible: window.screenMode === 2
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            engine: audioEngine
+            colorA: window.colorA
+            colorB: window.colorB
+            panelColor: window.panel
+            panelRaisedColor: window.panelRaised
+            borderColor: window.borderColor
+            textPrimary: window.textPrimary
+            textSecondary: window.textSecondary
+            darkMode: window.darkMode
+        }
+    }
+
+    Connections {
+        target: audioEngine
+        function onListeningModeChanged() {
+            if (!audioEngine.blindRunning && !audioEngine.blindRevealed && window.screenMode === 1)
+                window.screenMode = 0
         }
     }
 }

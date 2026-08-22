@@ -70,6 +70,8 @@ install -Dm644 "$source_dir/licenses/LGPL-2.1.txt" \
     "$app_dir/usr/share/doc/audio-ab-comparator/licenses/LGPL-2.1.txt"
 install -Dm644 "$source_dir/licenses/LGPL-3.0.txt" \
     "$app_dir/usr/share/doc/audio-ab-comparator/licenses/LGPL-3.0.txt"
+install -Dm644 "$source_dir/licenses/libebur128-MIT.txt" \
+    "$app_dir/usr/share/doc/audio-ab-comparator/licenses/libebur128-MIT.txt"
 
 desktop-file-validate \
     "$app_dir/usr/share/applications/io.github.KarmaGame33.AudioABComparator.desktop"
@@ -85,6 +87,11 @@ export EXTRA_QT_MODULES="multimedia;svg;waylandcompositor"
 export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
 export LINUXDEPLOY_OUTPUT_VERSION="$release_version"
 export LDAI_OUTPUT="$output_dir/$appimage_name"
+# The metadata has already been validated locally with --no-net above.  The
+# output plugin otherwise repeats the validation with network access and makes
+# a first release containing new screenshot URLs impossible to package before
+# those same files are published.
+export LDAI_NO_APPSTREAM=1
 
 cd "$work_dir"
 /usr/local/bin/linuxdeploy-x86_64.AppImage \
@@ -107,6 +114,8 @@ mkdir "$inspection_dir"
 )
 test -f \
     "$inspection_dir/squashfs-root/usr/plugins/wayland-graphics-integration-client/libqt-plugin-wayland-egl.so"
+test -f \
+    "$inspection_dir/squashfs-root/usr/plugins/platformthemes/libqxdgdesktopportal.so"
 
 (cd "$output_dir" && sha256sum "$appimage_name" > SHA256SUMS-linux)
 

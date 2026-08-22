@@ -36,15 +36,23 @@ if ($LASTEXITCODE -ne 0) { throw "CMake build failed with exit code $LASTEXITCOD
 & $CMake -E env "PATH=$env:PATH" ctest --test-dir $buildDirectory --output-on-failure --verbose
 if ($LASTEXITCODE -ne 0) { throw "CTest failed with exit code $LASTEXITCODE" }
 
-$env:QT_QPA_PLATFORM = 'offscreen'
 $executableCandidates = @(
     (Join-Path $buildDirectory 'ab-compare.exe'),
     (Join-Path $buildDirectory 'app\ab-compare.exe')
 )
 $executable = $executableCandidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 if (-not $executable) { throw "Built executable was not found in: $($executableCandidates -join ', ')" }
-& $executable --smoke-test
-if ($LASTEXITCODE -ne 0) { throw "QML smoke test failed with exit code $LASTEXITCODE" }
+$smokeStdout = Join-Path $buildDirectory 'smoke-test.stdout.txt'
+$smokeStderr = Join-Path $buildDirectory 'smoke-test.stderr.txt'
+$smokeProcess = Start-Process -FilePath $executable -ArgumentList '--smoke-test' -Wait -PassThru `
+    -RedirectStandardOutput $smokeStdout -RedirectStandardError $smokeStderr
+$smokeOutput = (Get-Content -LiteralPath $smokeStdout -Raw -ErrorAction SilentlyContinue) +
+    (Get-Content -LiteralPath $smokeStderr -Raw -ErrorAction SilentlyContinue)
+if ($smokeProcess.ExitCode -ne 0 -or $smokeOutput -notmatch 'SMOKE_VERSION=0\.3\.0-beta\.3') {
+    throw "QML smoke test failed with exit code $($smokeProcess.ExitCode):`n$smokeOutput"
+}
+Write-Host $smokeOutput
+Remove-Item -LiteralPath $smokeStdout, $smokeStderr -Force -ErrorAction SilentlyContinue
 
 & (Join-Path $PSScriptRoot 'package-release.ps1') -BuildDirectory 'build\windows-release' -QtRoot $QtRoot
 if ($LASTEXITCODE -ne 0) { throw "Packaging failed with exit code $LASTEXITCODE" }
