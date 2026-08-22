@@ -28,7 +28,7 @@ Everything runs locally. No audio is uploaded, and the application has no accoun
 
 ### Demonstration
 
-![A/B switching and Blind Test demonstration](docs/media/audio-ab-comparator-demo.gif)
+![Express, light theme and Blind Test demonstration](docs/media/audio-ab-comparator-demo.gif)
 
 ## Download
 
