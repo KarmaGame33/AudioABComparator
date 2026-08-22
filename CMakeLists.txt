@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.24)
 
 project(
     ab_compare
-    VERSION 0.3.0
+    VERSION 1.0.0
     DESCRIPTION "Comparateur audio A/B multiplateforme"
     LANGUAGES C CXX
 )
 
-set(AB_COMPARE_RELEASE_VERSION "0.3.0-beta.3")
+set(AB_COMPARE_RELEASE_VERSION "1.0.0")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

@@ -2,7 +2,7 @@
 
 ## Supported version
 
-Security reports are currently evaluated for the latest published beta only.
+Security reports are currently evaluated for the latest published version only.
 
 ## Reporting a vulnerability
 

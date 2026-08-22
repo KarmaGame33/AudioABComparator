@@ -53,7 +53,7 @@ AnalysisMetrics AnalysisComputer::analyze(
         return metrics;
     }
     if (format.channelCount() < 1 || format.channelCount() > 2) {
-        metrics.error = QStringLiteral("Multichannel analysis is not supported yet.");
+        metrics.error = QStringLiteral("Multichannel analysis is not supported.");
         return metrics;
     }
 

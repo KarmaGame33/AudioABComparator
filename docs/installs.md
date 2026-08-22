@@ -26,10 +26,10 @@ Les commandes Windows ci-dessous utilisent Qt 6.9.3 et Visual Studio 2022. Elles
 
 | Système | Build prévu | Tests natifs | Publication |
 |---|---:|---:|---:|
-| Arch Linux x64, KDE Plasma, Wayland, PipeWire | validé depuis les sources et via AppImage | automatisés et smoke tests Wayland/XWayland | AppImage bêta |
-| Ubuntu 22.04 LTS x64 | build AppImage reproductible en conteneur | automatisés avec sortie PulseAudio virtuelle | AppImage bêta ; essai GNOME interactif à compléter |
-| Windows 10 x64 | validé | validé | ZIP portable bêta |
-| Windows 11 x64 | validé | validé | ZIP portable bêta |
+| Arch Linux x64, KDE Plasma, Wayland, PipeWire | validé depuis les sources et via AppImage | automatisés et smoke tests Wayland/XWayland | AppImage |
+| Ubuntu 22.04 LTS x64 | build AppImage reproductible en conteneur | automatisés avec sortie PulseAudio virtuelle | AppImage ; essai GNOME interactif à compléter |
+| Windows 10 x64 | validé | validé | ZIP portable |
+| Windows 11 x64 | validé | validé | ZIP portable |
 | macOS Intel/Apple Silicon | préparé | non disponible actuellement | différée |
 
 Il n'est pas prévu de compiler Windows ou macOS depuis Arch Linux. Chaque version doit être construite nativement sur son OS ou sur un runner CI du même OS.
@@ -126,17 +126,17 @@ La construction vérifie aussi que l’intégration cliente Qt Wayland-EGL et le
 Les fichiers produits sont :
 
 ```text
-dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
+dist/release/AudioABComparator-1.0.0-linux-x86_64.AppImage
 dist/release/SHA256SUMS-linux
 ```
 
 Validation locale :
 
 ```fish
-chmod +x dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
-./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage --smoke-test
-./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
-env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
+chmod +x dist/release/AudioABComparator-1.0.0-linux-x86_64.AppImage
+./dist/release/AudioABComparator-1.0.0-linux-x86_64.AppImage --smoke-test
+./dist/release/AudioABComparator-1.0.0-linux-x86_64.AppImage
+env QT_QPA_PLATFORM=xcb ./dist/release/AudioABComparator-1.0.0-linux-x86_64.AppImage
 ```
 
 Les deux derniers lancements doivent afficher et maintenir la fenêtre, respectivement sous Wayland natif et XWayland/XCB. Ils sont indispensables : le smoke test seul se termine avant l’initialisation du rendu de la première trame.
@@ -260,7 +260,7 @@ Après un build et des tests réussis :
 Get-Content '.\dist\release\SHA256SUMS'
 ```
 
-Le script crée `AudioABComparator-0.3.0-beta.3-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, les textes LGPL et la licence MIT de libebur128. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
+Le script crée `AudioABComparator-1.0.0-windows-x86_64.zip` et `SHA256SUMS`. Le ZIP contient l'exécutable à sa racine, les DLL/plugins/QML nécessaires, `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, les textes LGPL et la licence MIT de libebur128. Il est destiné uniquement aux pièces jointes GitHub Releases et ne doit pas être committé dans Git.
 
 ## 5. macOS — procédure préparée mais non validée
 

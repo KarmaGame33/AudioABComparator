@@ -1,8 +1,17 @@
 # Changelog
 
-All notable changes to Audio A/B Comparator are documented in this file. The project follows Semantic Versioning; prerelease labels identify public beta builds.
+All notable changes to Audio A/B Comparator are documented in this file. Public versions use the straightforward `major.minor.patch` format.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-08-22
+
+### Changed
+
+- published the first stable release, completing the intended Express, Blind Test and Analysis feature set;
+- simplified public versioning to normal `major.minor.patch` releases without beta or release-candidate suffixes;
+- documented mono and stereo as the supported analysis scope; multichannel tracks remain loadable but are not analysed;
+- removed speculative roadmap items from the public presentation and updated all current download, packaging and security wording for the stable release.
 
 ## [0.3.0-beta.3] - 2026-08-22
 
@@ -125,7 +134,8 @@ All notable changes to Audio A/B Comparator are documented in this file. The pro
 
 - playback start, stop and resume behaviour.
 
-[Unreleased]: https://github.com/KarmaGame33/AudioABComparator/compare/v0.3.0-beta.3...HEAD
+[Unreleased]: https://github.com/KarmaGame33/AudioABComparator/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v1.0.0
 [0.3.0-beta.3]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.3
 [0.3.0-beta.2]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.2
 [0.3.0-beta.1]: https://github.com/KarmaGame33/AudioABComparator/releases/tag/v0.3.0-beta.1

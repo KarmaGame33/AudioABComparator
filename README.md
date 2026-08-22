@@ -32,15 +32,15 @@ Everything runs locally. No audio is uploaded, and the application has no accoun
 
 ## Download
 
-Version **0.3.0-beta.3** is available as a portable ZIP for **Windows 10 and Windows 11 x64** and as an AppImage for **Linux x86_64**. Download the binary and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
+Version **1.0.0** is available as a portable ZIP for **Windows 10 and Windows 11 x64** and as an AppImage for **Linux x86_64**. Download the binary and `SHA256SUMS` from the [GitHub Releases page](https://github.com/KarmaGame33/AudioABComparator/releases). Do not download binaries from the repository source tree.
 
-This beta is unsigned. Windows SmartScreen may display a warning because the executable has no Authenticode signature or established reputation. Verify the SHA-256 checksum, extract the complete ZIP, then run `ab-compare.exe` from the extracted folder.
+The Windows build is unsigned. SmartScreen may display a warning because the executable has no Authenticode signature or established reputation. Verify the SHA-256 checksum, extract the complete ZIP, then run `ab-compare.exe` from the extracted folder.
 
 On Linux, make the AppImage executable and run it without installation:
 
 ```sh
-chmod +x AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
-./AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
+chmod +x AudioABComparator-1.0.0-linux-x86_64.AppImage
+./AudioABComparator-1.0.0-linux-x86_64.AppImage
 ```
 
 ## Features
@@ -61,27 +61,13 @@ chmod +x AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage
 
 ## Analysis and native playback
 
-Analysis runs locally in the background. Whole-file and selection results use the retained native PCM and the native sample rate, channel count and sample format of each track. Live meters compare the playback PCM of A and B over the same moving window, excluding the optional transition beep and the short A/B crossfade. Their minimum and maximum markers persist through pause, resume, seeking and A/B switching, then reset on Stop or a selection change. This slice supports mono and stereo analysis; multichannel tracks remain loadable but their analysis is explicitly marked unsupported.
+Analysis runs locally in the background. Whole-file and selection results use the retained native PCM and the native sample rate, channel count and sample format of each track. Live meters compare the playback PCM of A and B over the same moving window, excluding the optional transition beep and the short A/B crossfade. Their minimum and maximum markers persist through pause, resume, seeking and A/B switching, then reset on Stop or a selection change. Analysis supports mono and stereo; multichannel tracks remain loadable but are not analysed.
 
 “Native playback” means that Audio A/B Comparator passes the common decoded PCM format to Qt when the default output device accepts it. It does not claim bit-perfect delivery after PipeWire, the Windows audio engine, a system mixer or device processing. If direct playback is not possible, the application converts to the default device's preferred format and reports sample-rate, channel-layout and sample-format changes separately for A and B. It never applies normalization, EQ, compression or limiting.
 
 Displayed audio values use two decimal places and DC offset uses three. Digital silence is shown as `−∞`; mathematically unavailable results are shown as `—`. Sample Peak and True Peak use the maximum channel, RMS uses every sample, and DC offset uses the signed mean of the channel with the strongest absolute offset.
 
 The calculation contract and automated tolerances are documented in [`docs/analysis_validation.md`](docs/analysis_validation.md).
-
-## Planned features
-
-The roadmap currently includes, without a fixed schedule:
-
-- stereo correlation and expanded multichannel analysis;
-- optional, non-destructive listening-level matching between both tracks;
-- more detailed meters;
-- a spectrum analyser and loudness history;
-- manual track offset and automatic correlation-based alignment;
-- improved multichannel file support;
-- a possible macOS port after native building and validation.
-
-These priorities may evolve according to real-world use and feedback. All feedback is welcome, whether it concerns usability, Blind Test behaviour, shortcuts, audio compatibility or future features.
 
 ## Build on Linux
 
@@ -129,22 +115,6 @@ Les principales fonctions sont :
 
 Tout fonctionne localement sur l’ordinateur : aucun fichier audio n’est envoyé sur un serveur et l’application ne contient ni compte utilisateur ni télémétrie. Les chemins des fichiers, les votes et les sessions d’écoute ne sont pas conservés après sa fermeture.
 
-La bêta **0.3.0-beta.3** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** et en AppImage pour **Linux x86_64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Vérifiez `SHA256SUMS` avant de lancer le binaire. Sous Windows, extrayez tout le ZIP puis lancez `ab-compare.exe` ; sous Linux, rendez l’AppImage exécutable avec `chmod +x`, puis lancez-la directement. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
+La version **1.0.0** est proposée en ZIP portable pour **Windows 10 et Windows 11 x64** et en AppImage pour **Linux x86_64** sur la page [GitHub Releases](https://github.com/KarmaGame33/AudioABComparator/releases). Vérifiez `SHA256SUMS` avant de lancer le binaire. Sous Windows, extrayez tout le ZIP puis lancez `ab-compare.exe` ; sous Linux, rendez l’AppImage exécutable avec `chmod +x`, puis lancez-la directement. Les retours se font uniquement par les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
 
-Il s’agit encore d’une bêta : l’interface et le fonctionnement principal sont opérationnels, mais les essais sur différentes configurations audio restent particulièrement utiles.
-
-### Fonctionnalités envisagées
-
-La feuille de route prévoit notamment, sans calendrier ferme :
-
-- la corrélation stéréo et une analyse multicanale étendue ;
-- une égalisation optionnelle et non destructive du niveau d’écoute entre les deux pistes ;
-- des vumètres plus détaillés ;
-- un analyseur spectral et un historique de la loudness ;
-- un décalage manuel des pistes et un alignement automatique par corrélation ;
-- une meilleure prise en charge des fichiers multicanaux ;
-- un éventuel portage macOS après compilation et validation natives.
-
-Ces priorités pourront évoluer en fonction des usages et des retours.
-
-**Tous les retours sont les bienvenus**, qu’ils concernent l’ergonomie, le fonctionnement du Blind Test, les raccourcis, la compatibilité audio ou les prochaines fonctionnalités. Vous pouvez signaler les problèmes reproductibles et proposer des améliorations dans les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).
+**Tous les retours sont les bienvenus**, notamment sur l’ergonomie, le fonctionnement du Blind Test, les raccourcis et la compatibilité audio. Vous pouvez signaler les problèmes reproductibles et proposer des améliorations dans les [Issues GitHub](https://github.com/KarmaGame33/AudioABComparator/issues).

@@ -10,8 +10,8 @@
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="45"/>
-        <source>Multichannel analysis is not supported yet; mono and stereo are supported.</source>
-        <translation>L’analyse multicanale n’est pas encore prise en charge ; les formats mono et stéréo le sont.</translation>
+        <source>Multichannel analysis is not supported; mono and stereo are supported.</source>
+        <translation>L’analyse multicanale n’est pas prise en charge ; les formats mono et stéréo le sont.</translation>
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="47"/>
@@ -40,8 +40,8 @@
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="86"/>
-        <source>Multichannel live measurements are not supported yet.</source>
-        <translation>Les mesures multicanales en temps réel ne sont pas encore prises en charge.</translation>
+        <source>Multichannel live measurements are not supported.</source>
+        <translation>Les mesures multicanales en temps réel ne sont pas prises en charge.</translation>
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="88"/>

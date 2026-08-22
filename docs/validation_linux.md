@@ -1,10 +1,10 @@
-# Validation de la distribution Linux 0.3.0-beta.3
+# Validation de la distribution Linux 1.0.0
 
 **Date :** 22 août 2026  
-**Artefact :** `AudioABComparator-0.3.0-beta.3-linux-x86_64.AppImage`  
+**Artefact :** `AudioABComparator-1.0.0-linux-x86_64.AppImage`  
 **Architecture :** x86_64  
 **Taille :** 53 373 432 octets  
-**SHA-256 :** `c604cda06bcf88cb5bcc61c5387acbc440bdcf46bfcafaffafd9a942cc2971d3`
+**SHA-256 :** `78ab74717bde2dcd525d34dd46e86b7f1fa06d9417bb1ceefd2f68f86d2ba695`
 
 ## Construction
 
@@ -42,6 +42,6 @@ Le binaire empaqueté a été lancé dans la session KDE Plasma du poste de vali
 - Wayland natif : fenêtre maintenue cinq secondes sans arrêt inattendu ni erreur QML, de plateforme ou de rendu ;
 - XWayland/XCB : fenêtre maintenue cinq secondes dans les mêmes conditions ;
 - backend Qt Multimedia FFmpeg 7.1.1 : chargé ;
-- version affichée `0.3.0-beta.3` et sélection explicite des sept langues : vérifiées sous les deux plateformes.
+- version affichée `1.0.0` et sélection explicite des sept langues : vérifiées sous les deux plateformes.
 
 La compilation et les tests automatisés ont été exécutés sur la base Ubuntu 22.04 LTS. Un essai graphique interactif complet dans une session Ubuntu GNOME réelle reste à effectuer ; cette limite est consignée ici.

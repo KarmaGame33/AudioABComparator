@@ -36,6 +36,6 @@ Le tableau de mastering reste à gauche et les mesures temps réel sont regroup�
 ## Limites connues
 
 - analyses limitées au mono et à la stéréo ;
-- corrélation stéréo, historique LUFS, spectre et analyse multicanale restent à implémenter ;
+- corrélation stéréo, historique LUFS, spectre et analyse multicanale ne font pas partie du périmètre retenu ;
 - aucune promesse de flux bit-perfect après PipeWire, le moteur audio Windows ou le mixeur système ;
 - paquets non signés : Windows SmartScreen peut afficher un avertissement.

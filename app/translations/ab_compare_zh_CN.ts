@@ -10,8 +10,8 @@
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="45"/>
-        <source>Multichannel analysis is not supported yet; mono and stereo are supported.</source>
-        <translation>暂不支持多声道分析；支持单声道和立体声。</translation>
+        <source>Multichannel analysis is not supported; mono and stereo are supported.</source>
+        <translation>不支持多声道分析；支持单声道和立体声。</translation>
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="47"/>
@@ -40,8 +40,8 @@
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="86"/>
-        <source>Multichannel live measurements are not supported yet.</source>
-        <translation>暂不支持多声道实时测量。</translation>
+        <source>Multichannel live measurements are not supported.</source>
+        <translation>不支持多声道实时测量。</translation>
     </message>
     <message>
         <location filename="../ui/components/AnalysisDashboard.qml" line="88"/>

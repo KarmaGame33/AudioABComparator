@@ -1,4 +1,4 @@
-# Validation Windows de la version 0.3.0-beta.3
+# Validation Windows de la version 1.0.0
 
 **Date :** 22 août 2026  
 **Plateformes annoncées :** Windows 10 et Windows 11 x64  
@@ -23,21 +23,21 @@ Les scénarios automatisés couvrent notamment UInt8, Int16, Int32 et Float en m
 
 La chaîne Qt 6.9.3/MSVC 2022 et l’API audio de cette série ont déjà été validées sous Windows 11 x64. Cette version conserve le même format binaire portable et les mêmes dépendances, mais ajoute le moteur d’analyse ; sa recette complète a donc été rejouée sous Windows 10.
 
-La compatibilité annoncée reste donc Windows 10 et Windows 11 x64. La recette complète de cette bêta a été rejouée sous Windows 10 ; elle n’a pas été rejouée sur une seconde machine Windows 11.
+La compatibilité annoncée reste donc Windows 10 et Windows 11 x64. La recette complète de cette version a été rejouée sous Windows 10 ; elle n’a pas été rejouée sur une seconde machine Windows 11.
 
 ## Contrôle du paquet
 
-Le ZIP final est `AudioABComparator-0.3.0-beta.3-windows-x86_64.zip` :
+Le ZIP final est `AudioABComparator-1.0.0-windows-x86_64.zip` :
 
 ```text
-SHA-256 : a70cd009da9aba027b8ce6060ade5a64ef20188c2b90d00a79b4db55415242b3
-Taille  : 54 321 062 octets
+SHA-256 : 7155ba270f060745f724a579b8e5059d31292102efbe12dc0d498881947f82bb
+Taille  : 54 300 941 octets
 ```
 
 Les contrôles indépendants ont confirmé :
 
 - intégrité ZIP et empreinte recalculée identique à `SHA256SUMS` ;
-- 1 421 fichiers, avec `ab-compare.exe` x86-64 à la racine du dossier versionné ;
+- 1 433 entrées, avec `ab-compare.exe` x86-64 à la racine du dossier versionné ;
 - `README.txt`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, les textes LGPL et la licence MIT de libebur128 présents ;
 - DLL Qt 6.9.3, FFmpeg 7.1.1, VC143 et plugins `platforms/`, `multimedia/` et `qml/` présents ;
 - aucun PDB, objet ou bibliothèque de build dans l’archive ;

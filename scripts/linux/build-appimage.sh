@@ -18,7 +18,7 @@ test -d "$work_dir"
 test -d "$output_dir"
 
 release_version=$(sed -n 's/^set(AB_COMPARE_RELEASE_VERSION "\([^"]*\)")$/\1/p' "$source_dir/CMakeLists.txt")
-if [[ ! $release_version =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+if [[ ! $release_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "Invalid release version: $release_version" >&2
     exit 2
 fi

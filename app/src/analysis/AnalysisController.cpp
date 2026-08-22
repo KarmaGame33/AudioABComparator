@@ -141,7 +141,7 @@ AnalysisController::State AnalysisController::stateFor(const AnalysisMetrics &me
     if (metrics.valid) {
         return Ready;
     }
-    if (metrics.error == QStringLiteral("Multichannel analysis is not supported yet.")) {
+    if (metrics.error == QStringLiteral("Multichannel analysis is not supported.")) {
         return Unsupported;
     }
     return Failed;

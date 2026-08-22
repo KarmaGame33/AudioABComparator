@@ -1,6 +1,6 @@
 # Third-party notices
 
-This inventory covers the libraries distributed with the Windows 10/11 x64 portable build and Linux x86_64 AppImage of Audio A/B Comparator 0.3.0-beta.3. The application source itself is licensed under GPL-3.0-or-later.
+This inventory covers the libraries distributed with the Windows 10/11 x64 portable build and Linux x86_64 AppImage of Audio A/B Comparator 1.0.0. The application source itself is licensed under GPL-3.0-or-later.
 
 ## libebur128 1.2.6
 

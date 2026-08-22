@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$releaseVersion = '0.3.0-beta.3'
+$releaseVersion = '1.0.0'
 $packageName = "AudioABComparator-$releaseVersion-windows-x86_64"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $buildPath = (Resolve-Path (Join-Path $repositoryRoot $BuildDirectory)).Path
@@ -72,7 +72,7 @@ foreach ($language in @('en', 'fr', 'de', 'es', 'pt_BR', 'ja', 'zh_CN')) {
     $smokeOutput = (Get-Content -LiteralPath $smokeStdout -Raw -ErrorAction SilentlyContinue) +
         (Get-Content -LiteralPath $smokeStderr -Raw -ErrorAction SilentlyContinue)
     if ($smokeProcess.ExitCode -ne 0 -or
-        $smokeOutput -notmatch 'SMOKE_VERSION=0\.3\.0-beta\.3' -or
+        $smokeOutput -notmatch 'SMOKE_VERSION=1\.0\.0' -or
         $smokeOutput -notmatch "SMOKE_LANGUAGE=$language") {
         throw "Packaged smoke test failed for $language with exit code $($smokeProcess.ExitCode):`n$smokeOutput"
     }
