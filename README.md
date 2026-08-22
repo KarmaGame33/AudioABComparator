@@ -18,11 +18,7 @@ Everything runs locally. No audio is uploaded, and the application has no accoun
 
 ![Audio A/B Comparator Blind Test screen](docs/media/audio-ab-comparator-blind-test.png)
 
-### Mastering Analysis
-
-![Audio A/B Comparator mastering Analysis dashboard](docs/media/audio-ab-comparator-analysis.png)
-
-### Paired live meters
+### Mastering Analysis & Paired live meters
 
 ![Audio A/B Comparator paired A/B live meters](docs/media/audio-ab-comparator-analysis-live.png)
 
